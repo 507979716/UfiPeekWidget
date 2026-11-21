@@ -49,7 +49,8 @@ struct UfiProvider: AppIntentTimelineProvider {
             || configuration.password?.trimmed.isEmpty == false
             || configuration.ztePassword?.trimmed.isEmpty == false
         let snap = await load(cfg, cached: cached, isConfiguredInWidget: isConfiguredInWidget)
-        let next = Date().addingTimeInterval(15 * 60)
+        // 成功 15 分钟后再刷；失败 5 分钟后重试（点一下小组件也会立即重试）
+        let next = Date().addingTimeInterval(snap.error == nil ? 15 * 60 : 5 * 60)
         return Timeline(entries: [UfiEntry(date: Date(), snap: snap)], policy: .after(next))
     }
 

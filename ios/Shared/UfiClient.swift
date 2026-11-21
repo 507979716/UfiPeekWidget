@@ -194,6 +194,8 @@ enum UfiError: LocalizedError {
 
 struct UfiClient {
     let config: UfiConfig
+    /// 小组件模式：不等待网络、短超时，保证几秒内交还时间线
+    var widgetMode = false
 
     static let devicePath = "/api/baseDeviceInfo"
     static let shellPath = "/api/user_shell"
@@ -212,12 +214,24 @@ struct UfiClient {
         "LD", "RD", "modem_main_state", "pin_status", "sim_pin_status",
     ]
 
+    // App 内：允许等待（首次弹出局域网权限时，用户点「允许」后请求能继续）
     private static let session: URLSession = {
         let c = URLSessionConfiguration.ephemeral
         c.timeoutIntervalForRequest = 12
         c.timeoutIntervalForResource = 25
         c.requestCachePolicy = .reloadIgnoringLocalCacheData
         c.waitsForConnectivity = true
+        return URLSession(configuration: c)
+    }()
+
+    // 小组件内：绝不等待。小组件扩展无法弹权限框，局域网被拦时等待只会卡到被系统杀掉，
+    // 结果就是桌面上一直显示灰色骨架。
+    private static let widgetSession: URLSession = {
+        let c = URLSessionConfiguration.ephemeral
+        c.timeoutIntervalForRequest = 4
+        c.timeoutIntervalForResource = 6
+        c.requestCachePolicy = .reloadIgnoringLocalCacheData
+        c.waitsForConnectivity = false
         return URLSession(configuration: c)
     }()
 
@@ -259,12 +273,13 @@ struct UfiClient {
         var s = config.baseURL + path
         if let q = query { s += "?" + q }
         guard let url = URL(string: s) else { throw UfiError.badURL }
-        var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: timeout)
+        var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData,
+                             timeoutInterval: widgetMode ? min(timeout, 4) : timeout)
         req.httpMethod = method
         for (k, v) in headers(method: method, path: path) { req.setValue(v, forHTTPHeaderField: k) }
         if let ct = contentType { req.setValue(ct, forHTTPHeaderField: "Content-Type") }
         req.httpBody = body
-        let (data, resp) = try await Self.session.data(for: req)
+        let (data, resp) = try await (widgetMode ? Self.widgetSession : Self.session).data(for: req)
         if let h = resp as? HTTPURLResponse, !(200..<300).contains(h.statusCode) { throw UfiError.http(h.statusCode) }
         return data
     }
@@ -365,21 +380,25 @@ struct UfiClient {
 
     // MARK: 主流程
 
-    // 到时取消未完成的请求，保留已经读到的指标。
-    func fetchForWidget() async -> UfiSnapshot {
-        await withTaskGroup(of: UfiSnapshot?.self, returning: UfiSnapshot.self) { group in
-            group.addTask { await fetch() }
-            group.addTask {
-                try? await Task.sleep(for: .seconds(8))
-                return nil
+    /// 小组件专用：最多等 budget 秒，到点立即返回（不等被取消的请求收尾），
+    /// 避免 WidgetKit 超时杀掉扩展导致一直显示骨架。
+    func fetchForWidget(budget: Double = 5) async -> UfiSnapshot {
+        let client = UfiClient(config: config, widgetMode: true)
+        let once = ResumeOnce()
+        return await withCheckedContinuation { (cont: CheckedContinuation<UfiSnapshot, Never>) in
+            let work = Task {
+                let snap = await client.fetch()
+                if once.claim() { cont.resume(returning: snap) }
             }
-            let first = await group.next() ?? nil
-            group.cancelAll()
-            if let first = first { return first }
-            if let partial = await group.next() ?? nil { return partial }
-            var snapshot = UfiSnapshot()
-            snapshot.error = "暂未收到设备数据，请重试"
-            return snapshot
+            Task {
+                try? await Task.sleep(nanoseconds: UInt64(budget * 1_000_000_000))
+                if once.claim() {
+                    work.cancel()
+                    var snap = UfiSnapshot()
+                    snap.error = "连接超时：请确认手机连着随身 WiFi，且已允许 UfiPeek 访问本地网络"
+                    cont.resume(returning: snap)
+                }
+            }
         }
     }
 
@@ -552,5 +571,17 @@ struct UfiClient {
               m.numberOfRanges > 1,
               let r = Range(m.range(at: 1), in: s) else { return nil }
         return Int(s[r])
+    }
+}
+
+/// 保证 continuation 只 resume 一次
+final class ResumeOnce: @unchecked Sendable {
+    private let lock = NSLock()
+    private var done = false
+    func claim() -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        if done { return false }
+        done = true
+        return true
     }
 }
