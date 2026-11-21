@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 由 tools/gen_android.py 生成 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:gravity="center_vertical"
+    android:background="@drawable/widget_bg"
+    android:paddingStart="10dp" android:paddingEnd="10dp" android:paddingTop="5dp" android:paddingBottom="5dp">
+    <LinearLayout android:id="@+id/top_bar" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical">
+        <ImageView android:layout_width="14dp" android:layout_height="14dp" android:src="@drawable/ic_router" android:tint="@color/router" />
+        <TextView android:id="@+id/model" style="@style/W.Title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="4dp" android:maxLines="1"/>
+        <TextView android:id="@+id/ufi_ver" style="@style/W.Small" android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="wrap_content" android:layout_marginStart="6dp" android:maxLines="1" android:ellipsize="end"
+            android:text="UFI v--"/>
+        <ImageView android:layout_width="12dp" android:layout_height="12dp" android:src="@drawable/ic_signal" android:tint="@color/text" />
+        <TextView android:id="@+id/signal_bar" style="@style/W.Title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp"/>
+        <TextView style="@style/W.Small" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginStart="5dp" android:layout_marginEnd="5dp" android:text="|" android:textColor="@color/divider"/>
+        <ImageView android:id="@+id/bat_icon" android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_bat_100"
+            android:tint="#FF16A34A"/>
+        <TextView android:id="@+id/battery" style="@style/W.Title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--%" android:layout_marginStart="2dp"/>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="2dp" android:baselineAligned="false">
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+            android:orientation="vertical" android:gravity="center_horizontal">
+            <TextView style="@style/W.Label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="今日流量"/>
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
+                android:baselineAligned="true">
+                <TextView android:id="@+id/daily_value" style="@style/W.Big" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" />
+                <TextView android:id="@+id/daily_unit" style="@style/W.Unit" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="2dp"/>
+            </LinearLayout>
+        </LinearLayout>
+        <FrameLayout android:layout_width="1dp" android:layout_height="30dp" android:background="@color/divider"/>
+        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+            android:orientation="vertical" android:gravity="center_horizontal">
+            <TextView style="@style/W.Label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="本月流量"/>
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
+                android:baselineAligned="true">
+                <TextView android:id="@+id/monthly_value" style="@style/W.Big" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" />
+                <TextView android:id="@+id/monthly_unit" style="@style/W.Unit" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="2dp"/>
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center" android:layout_marginTop="4dp">
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:background="@drawable/chip_bg" android:layout_marginEnd="4dp" 
+            android:paddingStart="5dp" android:paddingEnd="6dp" android:paddingTop="2dp" android:paddingBottom="2dp">
+            <ImageView android:layout_width="11dp" android:layout_height="11dp" android:src="@drawable/ic_globe" android:tint="@color/c_net" />
+            <TextView android:id="@+id/net" style="@style/W.Chip" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" android:maxWidth="96dp" android:maxLines="1" android:ellipsize="end"/>
+        </LinearLayout>
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:background="@drawable/chip_bg" android:layout_marginEnd="4dp" 
+            android:paddingStart="5dp" android:paddingEnd="6dp" android:paddingTop="2dp" android:paddingBottom="2dp">
+            <ImageView android:layout_width="11dp" android:layout_height="11dp" android:src="@drawable/ic_antenna" android:tint="@color/accent" />
+            <TextView android:id="@+id/band" style="@style/W.Chip" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:background="@drawable/chip_bg" android:layout_marginEnd="4dp" 
+            android:paddingStart="5dp" android:paddingEnd="6dp" android:paddingTop="2dp" android:paddingBottom="2dp">
+            <ImageView android:layout_width="11dp" android:layout_height="11dp" android:src="@drawable/ic_cpu" android:tint="@color/c_cpu" />
+            <TextView android:id="@+id/cpu" style="@style/W.Chip" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" />
+        </LinearLayout>
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:background="@drawable/chip_bg" 
+            android:paddingStart="5dp" android:paddingEnd="6dp" android:paddingTop="2dp" android:paddingBottom="2dp">
+            <ImageView android:layout_width="11dp" android:layout_height="11dp" android:src="@drawable/ic_temp" android:tint="@color/c_temp" />
+            <TextView android:id="@+id/temp" style="@style/W.Chip" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" />
+        </LinearLayout>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center" android:layout_marginTop="4dp">
+        <LinearLayout android:id="@+id/signal_group" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <ImageView android:layout_width="11dp" android:layout_height="11dp" android:src="@drawable/ic_antenna" android:tint="@color/signal" />
+            <TextView android:id="@+id/signal_detail" style="@style/W.Foot" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" android:maxLines="1"/>
+        </LinearLayout>
+        <TextView android:id="@+id/error_text" style="@style/W.Foot" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:textColor="#FFDC2626" android:maxLines="1" android:ellipsize="end" android:maxWidth="200dp" android:visibility="gone"/>
+        <ImageView android:layout_width="11dp" android:layout_height="11dp" android:src="@drawable/ic_clock" android:tint="@color/clock" android:layout_marginStart="8dp"/>
+        <TextView android:id="@+id/update_time" style="@style/W.Foot" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp"/>
+    </LinearLayout>
+</LinearLayout>

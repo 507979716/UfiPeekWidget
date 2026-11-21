@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 由 tools/gen_android.py 生成 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:gravity="center_vertical"
+    android:background="@drawable/widget_bg"
+    android:paddingStart="12dp" android:paddingEnd="12dp" android:paddingTop="10dp" android:paddingBottom="10dp">
+    <LinearLayout android:id="@+id/top_bar" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical">
+        <ImageView android:layout_width="13dp" android:layout_height="13dp" android:src="@drawable/ic_router" android:tint="@color/router" />
+        <TextView android:id="@+id/model" style="@style/W.Title" android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="wrap_content" android:layout_marginStart="4dp" android:maxLines="1" android:ellipsize="end"
+            android:text="U30 Air"/>
+        <ImageView android:id="@+id/bat_icon" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_bat_100"
+            android:tint="#FF16A34A"/>
+        <TextView android:id="@+id/battery" style="@style/W.Small" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="90%" android:layout_marginStart="2dp" android:textStyle="bold"/>
+    </LinearLayout>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
+    <TextView style="@style/W.Label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="今日流量"/>
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
+        android:baselineAligned="true">
+        <TextView android:id="@+id/daily_value" style="@style/W.BigSmall" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="9.88" />
+        <TextView android:id="@+id/daily_unit" style="@style/W.Unit" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="GB" android:layout_marginStart="2dp"/>
+    </LinearLayout>
+    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
+        android:gravity="center_vertical">
+        <TextView style="@style/W.Label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="本月"/>
+        <TextView android:id="@+id/monthly" style="@style/W.Title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="40.7GB" android:layout_marginStart="4dp"/>
+    </LinearLayout>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical">
+        <ImageView android:layout_width="10dp" android:layout_height="10dp" android:src="@drawable/ic_signal" android:tint="@color/text" />
+        <TextView android:id="@+id/net" style="@style/W.Foot" android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="wrap_content" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"
+            android:text="中国移动 5G"/>
+        <TextView android:id="@+id/error_text" style="@style/W.Foot" android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="wrap_content" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"
+            android:textColor="#FFDC2626" android:visibility="gone"/>
+        <TextView android:id="@+id/update_time" style="@style/W.Foot" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="08-05 12:59" android:layout_marginStart="4dp"/>
+    </LinearLayout>
+</LinearLayout>

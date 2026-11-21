@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_bg">#FF1A1A2E</color>
+    <color name="text">#FFEBEBEB</color>
+    <color name="secondary">#FFF1F5F9</color>
+    <color name="accent">#FF4D8DFF</color>
+    <color name="chip_bg">#FF2B2B3F</color>
+    <color name="divider">#FF3C3C52</color>
+    <color name="router">#FFD6D6D6</color>
+    <color name="signal">#FF3A87FE</color>
+    <color name="clock">#FF96D35F</color>
+    <color name="c_net">#FF22B8D8</color>
+    <color name="c_cpu">#FF5B8DF5</color>
+    <color name="c_temp">#FFF87171</color>
+    <color name="c_wifi">#FF2DD4BF</color>
+    <color name="c_mem">#FFA78BFA</color>
+    <color name="c_dev">#FFC084FC</color>
+</resources>

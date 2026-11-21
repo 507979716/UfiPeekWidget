@@ -1,0 +1,109 @@
+name: Build IPA & APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Build release APK
+        working-directory: android
+        run: gradle --no-daemon assembleRelease
+
+      - name: Rename
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk out/UfiPeek.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UfiPeek-apk
+          path: out/UfiPeek.apk
+
+  ios:
+    name: iOS IPA (unsigned)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.4.app || sudo xcode-select -s "$(ls -d /Applications/Xcode_16*.app | sort -V | tail -1)"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        working-directory: ios
+        run: xcodegen generate
+
+      - name: Build (no signing)
+        working-directory: ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project UfiPeek.xcodeproj \
+            -scheme UfiPeek \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build | tail -n 200
+
+      - name: Package IPA
+        run: |
+          APP=ios/build/Build/Products/Release-iphoneos/UfiPeek.app
+          ls "$APP" "$APP/PlugIns"
+          mkdir -p out/Payload
+          cp -R "$APP" out/Payload/
+          cd out && zip -qry UfiPeek-unsigned.ipa Payload && rm -rf Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UfiPeek-ipa
+          path: out/UfiPeek-unsigned.ipa
+
+  release:
+    name: Publish to Release "latest"
+    needs: [android, ios]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: UfiPeek 最新构建
+          body: |
+            - UfiPeek.apk：Android 直接安装（固定签名，可覆盖升级）
+            - UfiPeek-unsigned.ipa：iOS 未签名包，用自己的证书 / 签名工具签名后安装
+          files: |
+            dist/UfiPeek.apk
+            dist/UfiPeek-unsigned.ipa
+          prerelease: false
+          make_latest: true

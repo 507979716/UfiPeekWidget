@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">UfiPeek</string>
+    <string name="widget_medium_label">UfiPeek 中号</string>
+    <string name="widget_small_label">UfiPeek 小号</string>
+    <string name="widget_medium_desc">随身 WiFi 流量、电量、信号一览，点一下刷新</string>
+    <string name="widget_small_desc">今日 / 本月流量与电量</string>
+</resources>
