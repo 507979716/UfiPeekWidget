@@ -217,7 +217,7 @@ struct UfiClient {
         c.timeoutIntervalForRequest = 12
         c.timeoutIntervalForResource = 25
         c.requestCachePolicy = .reloadIgnoringLocalCacheData
-        c.waitsForConnectivity = false
+        c.waitsForConnectivity = true
         return URLSession(configuration: c)
     }()
 
@@ -356,6 +356,9 @@ struct UfiClient {
             default:
                 return error.localizedDescription
             }
+        }
+        if let error = error as? URLError, error.code == .appTransportSecurityRequiresSecureConnection {
+            return "iOS 已阻止该 HTTP 地址，请检查后台地址"
         }
         return "无法连接，请检查 iPhone 的 Wi‑Fi 和局域网权限"
     }
