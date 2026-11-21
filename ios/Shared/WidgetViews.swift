@@ -1,4 +1,5 @@
 import SwiftUI
+import WidgetKit
 
 extension Color {
     init(hex: UInt32) {
@@ -41,7 +42,7 @@ private struct TrafficValue: View {
                 .foregroundStyle(p.secondary)
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
-                    .font(.system(size: numberSize, weight: .bold))
+                    .font(.system(size: numberSize, weight: .semibold, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(p.text)
                     .minimumScaleFactor(0.55)
@@ -94,12 +95,13 @@ private struct WidgetHeader: View {
         HStack(spacing: 4) {
             Image(systemName: "wifi.router.fill")
                 .foregroundStyle(p.accent)
+                .widgetAccentable()
                 .accessibilityHidden(true)
-            Text(snap.model)
-                .fontWeight(.bold)
+            Text(snap.model == "--" ? "UfiPeek" : snap.model)
+                .fontWeight(.semibold)
                 .foregroundStyle(p.text)
                 .layoutPriority(1)
-            if detailed {
+            if detailed && snap.ufiVersion != "--" {
                 Text("UFI v\(snap.ufiVersion)")
                     .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(p.secondary)
@@ -115,18 +117,20 @@ private struct WidgetHeader: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text("信号 \(snap.signalBar) 格"))
             }
-            HStack(spacing: 3) {
-                Image(systemName: snap.batteryIcon)
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color(hex: snap.batteryColorHex))
-                Text("\(snap.battery)%")
-                    .fontWeight(.semibold)
+            if snap.battery != "--" {
+                HStack(spacing: 3) {
+                    Image(systemName: snap.batteryIcon)
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color(hex: snap.batteryColorHex))
+                    Text("\(snap.battery)%")
+                        .fontWeight(.semibold)
+                }
+                .fixedSize()
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text("电量 \(snap.battery)%"))
             }
-            .fixedSize()
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Text("电量 \(snap.battery)%"))
         }
-        .font(.system(size: 11, weight: .medium))
+        .font(.system(size: 12, weight: .medium))
         .monospacedDigit()
         .lineLimit(1)
         .minimumScaleFactor(0.75)
@@ -204,7 +208,7 @@ struct MediumWidgetView: View {
             WidgetFooter(snap: snap, p: p, detailed: true)
         }
         .padding(.horizontal, 13)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -222,7 +226,7 @@ struct SmallWidgetView: View {
         VStack(alignment: .leading, spacing: 4) {
             WidgetHeader(snap: snap, p: p)
             Spacer(minLength: 0)
-            TrafficValue(title: "今日流量", value: snap.dailyValue, unit: snap.dailyUnit, p: p, numberSize: 29)
+            TrafficValue(title: "今日流量", value: snap.dailyValue, unit: snap.dailyUnit, p: p, numberSize: 32)
             HStack(spacing: 4) {
                 Text("本月")
                     .foregroundStyle(p.secondary)
@@ -236,7 +240,7 @@ struct SmallWidgetView: View {
             Spacer(minLength: 0)
             WidgetFooter(snap: snap, p: p)
         }
-        .padding(10)
+        .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -248,20 +252,27 @@ struct LockRectView: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 3) {
                 Image(systemName: "wifi.router.fill")
-                Text(snap.model)
+                Text(snap.model == "--" ? "UfiPeek" : snap.model)
                 Spacer(minLength: 2)
-                Image(systemName: snap.batteryIcon)
-                Text("\(snap.battery)%")
-                    .fixedSize()
+                if snap.battery != "--" {
+                    Image(systemName: snap.batteryIcon)
+                    Text("\(snap.battery)%")
+                        .fixedSize()
+                }
             }
             .font(.system(size: 11, weight: .semibold))
             Text("今日 \(snap.dailyValue) \(snap.dailyUnit)")
                 .font(.system(size: 15, weight: .bold))
-            Text("本月 \(snap.monthlyValue) \(snap.monthlyUnit) · \(snap.netSummary)")
+            Text(snap.error ?? monthlySummary)
                 .font(.system(size: 10, weight: .medium))
         }
         .monospacedDigit()
         .lineLimit(1)
         .minimumScaleFactor(0.75)
+    }
+
+    private var monthlySummary: String {
+        let traffic = "本月 \(snap.monthlyValue) \(snap.monthlyUnit)"
+        return snap.netSummary == "--" ? traffic : "\(traffic) · \(snap.netSummary)"
     }
 }

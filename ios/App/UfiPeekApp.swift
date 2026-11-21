@@ -11,13 +11,24 @@ struct UfiPeekApp: App {
 }
 
 struct ContentView: View {
-    @State private var url = ""
+    private enum PreviewSize: String, CaseIterable, Identifiable {
+        case small = "小号"
+        case medium = "中号"
+
+        var id: Self { self }
+    }
+
+    private enum Field: Hashable { case address, password, ztePassword }
+
+    @State private var url = UfiConfig.defaultURL
     @State private var password = ""
     @State private var ztePassword = ""
     @State private var testing = false
     @State private var snap: UfiSnapshot?
     @State private var testResult: UfiSnapshot?
     @State private var savedTip = false
+    @State private var previewSize: PreviewSize = .medium
+    @FocusState private var focusedField: Field?
     @Environment(\.colorScheme) private var scheme
 
     private var config: UfiConfig { UfiConfig(url: url, password: password, ztePassword: ztePassword) }
@@ -26,12 +37,18 @@ struct ContentView: View {
         NavigationStack {
             Form {
                 Section {
-                    MediumWidgetView(snap: snap ?? .placeholder)
-                        .frame(height: 146)
-                        .background(UfiPalette(dark: scheme == .dark).widgetBackground,
-                                    in: RoundedRectangle(cornerRadius: 22))
-                        .listRowBackground(Color.clear)
-                        .listRowInsets(EdgeInsets())
+                    VStack(spacing: 12) {
+                        Picker("预览尺寸", selection: $previewSize) {
+                            ForEach(PreviewSize.allCases) { size in
+                                Text(size.rawValue).tag(size)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        widgetPreview
+                    }
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
                 } header: {
                     HStack {
                         Text("小组件预览")
@@ -46,24 +63,28 @@ struct ContentView: View {
                             .keyboardType(.URL)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
+                            .focused($focusedField, equals: .address)
                             .accessibilityLabel("后台地址")
                     }
                     field("UFI 密码") {
                         SecureField("UFI-TOOLS 后台密码", text: $password)
+                            .focused($focusedField, equals: .password)
                             .accessibilityLabel("UFI 密码")
                     }
                     field("ZTE 密码（选填）") {
                         SecureField("留空则使用 UFI 密码", text: $ztePassword)
+                            .focused($focusedField, equals: .ztePassword)
                             .accessibilityLabel("ZTE 密码（选填）")
                     }
                 }
 
                 Section {
                     Button {
+                        focusedField = nil
                         Task { await test() }
                     } label: {
                         HStack {
-                            Text("测试连接")
+                            Label("测试连接", systemImage: "antenna.radiowaves.left.and.right")
                             Spacer()
                             if testing { ProgressView().controlSize(.small) }
                         }
@@ -71,11 +92,13 @@ struct ContentView: View {
                     .disabled(!config.isConfigured || testing)
 
                     Button {
+                        focusedField = nil
                         UfiStore.save(config)
                         WidgetCenter.shared.reloadAllTimelines()
                         savedTip = true
                     } label: {
-                        Text("保存并刷新").fontWeight(.semibold)
+                        Label("保存并刷新", systemImage: "arrow.clockwise")
+                            .fontWeight(.semibold)
                     }
                     .disabled(!config.isConfigured)
                 } footer: {
@@ -92,13 +115,19 @@ struct ContentView: View {
                     }
                 }
 
-                Section("添加到桌面") {
-                    Text("长按桌面空白处，在小组件列表中搜索 UfiPeek。点一下小组件即可刷新。")
-                    Text("首次测试连接时请允许访问局域网。若小组件提示填写后台地址，请长按它，选择「编辑小组件」并填写连接设置。")
+                Section {
+                    DisclosureGroup("添加小组件") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("主屏幕或锁屏都可以添加 UfiPeek。主屏幕的小组件点一下即可刷新。")
+                            Text("首次测试请允许访问局域网。若 App 能连接但小组件没有数据，可长按小组件，在「编辑小组件」中填写连接设置。")
+                        }
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 4)
+                    }
                 }
-                .font(.footnote)
-                .foregroundStyle(.secondary)
             }
+            .formStyle(.grouped)
             .navigationTitle("UfiPeek")
             .navigationBarTitleDisplayMode(.large)
             .scrollDismissesKeyboard(.interactively)
@@ -113,6 +142,24 @@ struct ContentView: View {
                 password = saved.password
                 ztePassword = saved.ztePassword
                 snap = UfiStore.lastSnapshot()
+            }
+        }
+    }
+
+    private var widgetPreview: some View {
+        let snapshot = snap ?? .placeholder
+        let background = UfiPalette(dark: scheme == .dark).widgetBackground
+        return Group {
+            switch previewSize {
+            case .small:
+                SmallWidgetView(snap: snapshot)
+                    .frame(width: 146, height: 146)
+                    .background(background, in: RoundedRectangle(cornerRadius: 22))
+                    .frame(maxWidth: .infinity)
+            case .medium:
+                MediumWidgetView(snap: snapshot)
+                    .frame(height: 146)
+                    .background(background, in: RoundedRectangle(cornerRadius: 22))
             }
         }
     }
