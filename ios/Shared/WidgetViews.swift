@@ -276,3 +276,23 @@ struct LockRectView: View {
         return snap.netSummary == "--" ? traffic : "\(traffic) · \(snap.netSummary)"
     }
 }
+
+struct WidgetStatusView: View {
+    let message: String?
+    var lockScreen = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: lockScreen ? 2 : 6) {
+            Label("UfiPeek", systemImage: "wifi.router.fill")
+                .font(lockScreen ? .caption.bold() : .subheadline.bold())
+            Text(message ?? "打开 UfiPeek 测试连接并保存")
+                .font(lockScreen ? .caption2 : .caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(lockScreen ? 2 : 4)
+                .minimumScaleFactor(0.8)
+        }
+        .padding(lockScreen ? 3 : 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .unredacted()
+    }
+}

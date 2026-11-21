@@ -24,6 +24,10 @@ struct UfiConfig: Equatable {
 
     var ufiPassword: String { password.trimmed.isEmpty ? "admin" : password.trimmed }
     var ztePasswordEffective: String { ztePassword.trimmed.isEmpty ? ufiPassword : ztePassword.trimmed }
+
+    func usesSameConnection(as other: UfiConfig) -> Bool {
+        baseURL == other.baseURL && ufiPassword == other.ufiPassword && ztePasswordEffective == other.ztePasswordEffective
+    }
 }
 
 extension String {
@@ -34,7 +38,12 @@ extension String {
 
 enum UfiStore {
     static let groupID = "group.com.ufipeek.widget"
-    static var defaults: UserDefaults { UserDefaults(suiteName: groupID) ?? .standard }
+    private static let sharedDefaults: UserDefaults? = {
+        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupID) != nil else { return nil }
+        return UserDefaults(suiteName: groupID)
+    }()
+    static var canShareWithWidget: Bool { sharedDefaults != nil }
+    private static var defaults: UserDefaults { sharedDefaults ?? .standard }
 
     static func load() -> UfiConfig {
         let d = defaults
@@ -45,13 +54,17 @@ enum UfiStore {
     }
 
     static func save(_ c: UfiConfig) {
+        let changed = !c.usesSameConnection(as: load())
         let d = defaults
+        if changed { d.removeObject(forKey: "last_snapshot") }
         d.set(c.url.trimmed, forKey: "url")
         d.set(c.password, forKey: "password")
         d.set(c.ztePassword, forKey: "zte_password")
     }
 
-    static func saveSnapshot(_ s: UfiSnapshot) {
+    static func saveSnapshot(_ s: UfiSnapshot, for config: UfiConfig) {
+        guard s.error == nil, s.hasData, config.usesSameConnection(as: load()) else { return }
+        if let cached = lastSnapshot(), cached.updatedAt > s.updatedAt { return }
         if let data = try? JSONEncoder().encode(s) { defaults.set(data, forKey: "last_snapshot") }
     }
 
@@ -98,7 +111,13 @@ struct UfiSnapshot: Codable {
     var zreqOK = false
     var error: String?
 
-    var hasData: Bool { model != "--" || dailyValue != "--" || battery != "--" }
+    var hasData: Bool {
+        model != "--" || dailyValue != "--" || monthlyValue != "--" || battery != "--"
+            || netSummary != "--" || cpuUsage != "--" || cpuTemp != "--"
+            || ssid != "--" || wifiBand != "--" || mem != "--"
+            || signalBar != "--" || rsrp != "--" || rsrq != "--" || snr != "--"
+            || wifiDeviceCount != nil || smsUnreadCount != nil || band != "—"
+    }
 
     var missingNetworkData: [String] {
         var missing = [String]()
@@ -236,6 +255,7 @@ struct UfiClient {
 
     private func send(_ method: String, path: String, query: String? = nil, body: Data? = nil,
                       contentType: String? = nil, timeout: TimeInterval = 12) async throws -> Data {
+        try Task.checkCancellation()
         var s = config.baseURL + path
         if let q = query { s += "?" + q }
         guard let url = URL(string: s) else { throw UfiError.badURL }
@@ -316,15 +336,49 @@ struct UfiClient {
                 Self.firstInt(#"MemAvailable:\s*(\d+)"#, in: s) ?? 0)
     }
 
-    private func deviceInfo() async -> [String: Any] {
-        (try? await send("GET", path: Self.devicePath)).map { Self.jsonDict($0) } ?? [:]
+    private func deviceInfo() async throws -> [String: Any] {
+        let result = Self.jsonDict(try await send("GET", path: Self.devicePath))
+        guard !result.isEmpty else { throw UfiError.noData }
+        return result
     }
 
     private func zreqBasicSafe() async -> [String: Any] {
         (try? await zreqBasic()) ?? [:]
     }
 
+    private static func connectionMessage(_ error: Error?) -> String {
+        if let error = error as? UfiError {
+            switch error {
+            case .http(401), .http(403):
+                return "后台拒绝访问，请检查 UFI 密码"
+            case .noData:
+                return "后台未返回可显示的数据"
+            default:
+                return error.localizedDescription
+            }
+        }
+        return "无法连接，请检查 iPhone 的 Wi‑Fi 和局域网权限"
+    }
+
     // MARK: 主流程
+
+    // 到时取消未完成的请求，保留已经读到的指标。
+    func fetchForWidget() async -> UfiSnapshot {
+        await withTaskGroup(of: UfiSnapshot?.self, returning: UfiSnapshot.self) { group in
+            group.addTask { await fetch() }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(8))
+                return nil
+            }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            if let first = first { return first }
+            if let partial = await group.next() ?? nil { return partial }
+            var snapshot = UfiSnapshot()
+            snapshot.error = "暂未收到设备数据，请重试"
+            return snapshot
+        }
+    }
 
     func fetch() async -> UfiSnapshot {
         guard config.isConfigured else {
@@ -336,7 +390,14 @@ struct UfiClient {
         async let zreqTask = zreqBasicSafe()
         async let rootTask = rootInfo()
 
-        let d = await devTask
+        var deviceError: Error?
+        let d: [String: Any]
+        do {
+            d = try await devTask
+        } catch {
+            d = [:]
+            deviceError = error
+        }
         var g = await zreqTask
         let zreqOK = !g.isEmpty
         if !zreqOK {
@@ -350,7 +411,7 @@ struct UfiClient {
         let r = await rootTask
         var snap = Self.build(d: d, g: g, freq: r.freq, memTotal: r.memTotal, memAvail: r.memAvail)
         snap.zreqOK = zreqOK
-        if d.isEmpty && g.isEmpty { snap.error = "连接失败，请检查地址和密码" }
+        if !snap.hasData { snap.error = Self.connectionMessage(deviceError ?? UfiError.noData) }
         return snap
     }
 

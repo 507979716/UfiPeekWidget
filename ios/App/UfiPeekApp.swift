@@ -26,7 +26,8 @@ struct ContentView: View {
     @State private var testing = false
     @State private var snap: UfiSnapshot?
     @State private var testResult: UfiSnapshot?
-    @State private var savedTip = false
+    @State private var testedConfig: UfiConfig?
+    @State private var saveMessage: String?
     @State private var previewSize: PreviewSize = .medium
     @FocusState private var focusedField: Field?
     @Environment(\.colorScheme) private var scheme
@@ -81,7 +82,7 @@ struct ContentView: View {
                 Section {
                     Button {
                         focusedField = nil
-                        Task { await test() }
+                        Task { await refresh(save: false) }
                     } label: {
                         HStack {
                             Label("测试连接", systemImage: "antenna.radiowaves.left.and.right")
@@ -93,14 +94,12 @@ struct ContentView: View {
 
                     Button {
                         focusedField = nil
-                        UfiStore.save(config)
-                        WidgetCenter.shared.reloadAllTimelines()
-                        savedTip = true
+                        Task { await refresh(save: true) }
                     } label: {
                         Label("保存并刷新", systemImage: "arrow.clockwise")
                             .fontWeight(.semibold)
                     }
-                    .disabled(!config.isConfigured)
+                    .disabled(!config.isConfigured || testing)
                 } footer: {
                     if testing {
                         Text("连接中…")
@@ -112,6 +111,14 @@ struct ContentView: View {
                         } else {
                             Text("已连接，未读到：\(result.missingNetworkData.joined(separator: "、"))")
                         }
+                    }
+                }
+
+                if !UfiStore.canShareWithWidget {
+                    Section {
+                        Label("当前签名无法在 App 和小组件之间共享设置", systemImage: "exclamationmark.circle")
+                    } footer: {
+                        Text("长按桌面上的 UfiPeek，点「编辑小组件」，在里面填写后台地址和密码。")
                     }
                 }
 
@@ -131,10 +138,13 @@ struct ContentView: View {
             .navigationTitle("UfiPeek")
             .navigationBarTitleDisplayMode(.large)
             .scrollDismissesKeyboard(.interactively)
-            .alert("已保存", isPresented: $savedTip) {
+            .alert("已保存", isPresented: Binding(
+                get: { saveMessage != nil },
+                set: { if !$0 { saveMessage = nil } }
+            )) {
                 Button("好") {}
             } message: {
-                Text("已请求刷新小组件。")
+                if let saveMessage = saveMessage { Text(saveMessage) }
             }
             .onAppear {
                 let saved = UfiStore.load()
@@ -176,13 +186,35 @@ struct ContentView: View {
     }
 
     @MainActor
-    private func test() async {
+    private func refresh(save: Bool) async {
         guard config.isConfigured && !testing else { return }
+        let requested = config
         testing = true
         defer { testing = false }
-        let result = await UfiClient(config: config).fetch()
+        let result: UfiSnapshot
+        if save, let testedConfig = testedConfig, let tested = testResult,
+           testedConfig.usesSameConnection(as: requested), tested.error == nil, tested.hasData,
+           (-5...20).contains(Date().timeIntervalSince(tested.updatedAt)) {
+            result = tested
+        } else {
+            result = await UfiClient(config: requested).fetch()
+        }
+        guard requested == config else { return }
+        if save { UfiStore.save(requested) }
         snap = result
         testResult = result
-        if result.error == nil { UfiStore.saveSnapshot(result) }
+        testedConfig = requested
+        UfiStore.saveSnapshot(result, for: requested)
+        if save || (result.error == nil && requested.usesSameConnection(as: UfiStore.load())) {
+            WidgetCenter.shared.reloadAllTimelines()
+        }
+        guard save else { return }
+        if let error = result.error {
+            saveMessage = "设置已保存。\(error)"
+        } else if !UfiStore.canShareWithWidget {
+            saveMessage = "已读取设备数据。请长按桌面小组件，在「编辑小组件」里填写地址和密码。"
+        } else {
+            saveMessage = "已读取设备数据，并请求刷新小组件。"
+        }
     }
 }

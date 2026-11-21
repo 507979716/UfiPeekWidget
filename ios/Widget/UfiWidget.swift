@@ -37,41 +37,61 @@ struct UfiProvider: AppIntentTimelineProvider {
     }
 
     func snapshot(for configuration: UfiConfigIntent, in context: Context) async -> UfiEntry {
-        if context.isPreview {
-            return UfiEntry(date: Date(), snap: UfiStore.lastSnapshot() ?? .placeholder)
-        }
-        return UfiEntry(date: Date(), snap: await load(configuration))
+        let cached = cachedSnapshot(for: resolvedConfig(configuration))
+        let fallback = context.isPreview ? UfiSnapshot.placeholder : unavailableSnapshot()
+        return UfiEntry(date: Date(), snap: cached ?? fallback)
     }
 
     func timeline(for configuration: UfiConfigIntent, in context: Context) async -> Timeline<UfiEntry> {
-        let snap = await load(configuration)
+        let cfg = resolvedConfig(configuration)
+        let cached = cachedSnapshot(for: cfg)
+        let isConfiguredInWidget = configuration.url?.trimmed.isEmpty == false
+            || configuration.password?.trimmed.isEmpty == false
+            || configuration.ztePassword?.trimmed.isEmpty == false
+        let snap = await load(cfg, cached: cached, isConfiguredInWidget: isConfiguredInWidget)
         let next = Date().addingTimeInterval(15 * 60)
         return Timeline(entries: [UfiEntry(date: Date(), snap: snap)], policy: .after(next))
     }
 
-    private func load(_ c: UfiConfigIntent) async -> UfiSnapshot {
+    private func resolvedConfig(_ c: UfiConfigIntent) -> UfiConfig {
         var cfg = UfiStore.load()
         if let u = c.url, !u.trimmed.isEmpty { cfg.url = u }
         if let p = c.password, !p.trimmed.isEmpty { cfg.password = p }
         if let z = c.ztePassword, !z.trimmed.isEmpty { cfg.ztePassword = z }
 
-        guard cfg.isConfigured else {
-            var s = UfiSnapshot()
-            s.error = "长按 →编辑小组件，填写后台地址"
-            return s
-        }
+        return cfg
+    }
 
-        let fresh = await UfiClient(config: cfg).fetch()
-        if fresh.error == nil {
-            UfiStore.saveSnapshot(fresh)
+    private func cachedSnapshot(for cfg: UfiConfig) -> UfiSnapshot? {
+        guard cfg.usesSameConnection(as: UfiStore.load()),
+              let snap = UfiStore.lastSnapshot(), snap.hasData else { return nil }
+        return snap
+    }
+
+    private func unavailableSnapshot(reason: String? = nil) -> UfiSnapshot {
+        var snap = UfiSnapshot()
+        snap.error = reason ?? "打开 UfiPeek 测试连接并保存"
+        return snap
+    }
+
+    private func load(_ cfg: UfiConfig, cached: UfiSnapshot?, isConfiguredInWidget: Bool) async -> UfiSnapshot {
+        // 刚在 App 内保存的数据已可用，无需让 WidgetKit 再等一轮网络。
+        if let cached = cached, (-5...20).contains(Date().timeIntervalSince(cached.updatedAt)) {
+            return cached
+        }
+        let fresh = await UfiClient(config: cfg).fetchForWidget()
+        if fresh.hasData && fresh.error == nil {
+            UfiStore.saveSnapshot(fresh, for: cfg)
             return fresh
         }
-        // 失败时保留上次数据，只在底栏提示错误
-        if var last = UfiStore.lastSnapshot(), last.hasData {
-            last.error = fresh.error
-            return last
+        if var cached = cached {
+            cached.error = fresh.error
+            return cached
         }
-        return fresh
+        if !UfiStore.canShareWithWidget && !isConfiguredInWidget {
+            return unavailableSnapshot(reason: "长按小组件，在「编辑小组件」里填写地址和密码")
+        }
+        return unavailableSnapshot(reason: fresh.error)
     }
 }
 
@@ -96,15 +116,27 @@ struct UfiWidgetEntryView: View {
     private var content: some View {
         switch family {
         case .accessoryRectangular:
-            LockRectView(snap: entry.snap)
+            if entry.snap.hasData {
+                LockRectView(snap: entry.snap)
+            } else {
+                WidgetStatusView(message: entry.snap.error, lockScreen: true)
+            }
         case .systemSmall:
             Button(intent: RefreshIntent()) {
-                SmallWidgetView(snap: entry.snap)
+                if entry.snap.hasData {
+                    SmallWidgetView(snap: entry.snap)
+                } else {
+                    WidgetStatusView(message: entry.snap.error)
+                }
             }
             .buttonStyle(.plain)
         default:
             Button(intent: RefreshIntent()) {
-                MediumWidgetView(snap: entry.snap)
+                if entry.snap.hasData {
+                    MediumWidgetView(snap: entry.snap)
+                } else {
+                    WidgetStatusView(message: entry.snap.error)
+                }
             }
             .buttonStyle(.plain)
         }
