@@ -5,7 +5,7 @@
     android:layout_width="match_parent" android:layout_height="match_parent"
     android:orientation="vertical" android:gravity="center_vertical"
     android:background="@drawable/widget_bg"
-    android:paddingStart="9dp" android:paddingEnd="9dp" android:paddingTop="2dp" android:paddingBottom="2dp">
+    android:paddingStart="13dp" android:paddingEnd="13dp" android:paddingTop="2dp" android:paddingBottom="2dp">
     <LinearLayout android:id="@+id/top_bar" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical">
         <ImageView android:layout_width="14dp" android:layout_height="14dp" android:src="@drawable/ic_router" android:tint="@color/accent" />
@@ -13,17 +13,17 @@
         <TextView android:id="@+id/ufi_ver" style="@style/W.Small" android:layout_width="0dp" android:layout_weight="1"
             android:layout_height="wrap_content" android:layout_marginStart="6dp" android:layout_marginEnd="4dp" android:maxLines="1" android:ellipsize="end"
             android:text="UFI v--"/>
-        <ImageView android:layout_width="12dp" android:layout_height="12dp" android:src="@drawable/ic_signal" android:tint="@color/signal" />
+        <ImageView android:id="@+id/signal_icon" android:layout_width="12dp" android:layout_height="12dp" android:src="@drawable/ic_signal" android:tint="@color/secondary" />
         <TextView android:id="@+id/signal_bar" style="@style/W.Small" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp"/>
         <ImageView android:id="@+id/bat_icon" android:layout_width="15dp" android:layout_height="15dp" android:src="@drawable/ic_bat_100"
-            android:layout_marginStart="7dp" android:tint="@color/c_wifi"/>
+            android:layout_marginStart="5dp" android:tint="@color/success"/>
         <TextView android:id="@+id/battery" style="@style/W.Title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--%" android:layout_marginStart="3dp"/>
     </LinearLayout>
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:layout_marginTop="2dp" android:baselineAligned="false">
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:layout_marginTop="3dp" android:baselineAligned="false">
         <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-            android:orientation="vertical" android:background="@drawable/traffic_daily_bg"
-            android:paddingStart="8dp" android:paddingEnd="8dp" android:paddingTop="0dp" android:paddingBottom="0dp">
+            android:orientation="vertical" android:paddingStart="0dp" android:paddingEnd="4dp">
             <TextView style="@style/W.Label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="今日流量"/>
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:orientation="horizontal" android:baselineAligned="true">
@@ -34,11 +34,10 @@
                 <TextView android:id="@+id/daily_unit" style="@style/W.Unit" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp"/>
             </LinearLayout>
         </LinearLayout>
-        <FrameLayout android:layout_width="5dp" android:layout_height="1dp"/>
+        <FrameLayout android:layout_width="1dp" android:layout_height="24dp" android:background="@color/divider"/>
         <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-            android:orientation="vertical" android:background="@drawable/traffic_monthly_bg"
-            android:paddingStart="8dp" android:paddingEnd="8dp" android:paddingTop="0dp" android:paddingBottom="0dp">
-            <TextView style="@style/W.LabelMuted" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="本月流量"/>
+            android:orientation="vertical" android:paddingStart="10dp" android:paddingEnd="4dp">
+            <TextView style="@style/W.Label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="本月流量"/>
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:orientation="horizontal" android:baselineAligned="true">
                 <TextView android:id="@+id/monthly_value" style="@style/W.BigCompact" android:layout_width="wrap_content"
@@ -49,42 +48,38 @@
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="2dp">
-        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
+    <LinearLayout android:id="@+id/mobile_metrics" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="3dp">
+        <LinearLayout android:id="@+id/net_metric" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical"
-            android:background="@drawable/chip_bg" android:layout_marginEnd="4dp" 
-            android:paddingStart="5dp" android:paddingEnd="5dp" android:paddingTop="2dp" android:paddingBottom="2dp">
-            <ImageView android:layout_width="10dp" android:layout_height="10dp" android:src="@drawable/ic_globe" android:tint="@color/c_net" />
-            <TextView android:id="@+id/net" style="@style/W.Chip" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"/>
+            android:paddingEnd="8dp" android:paddingTop="1dp" android:paddingBottom="1dp">
+            <ImageView android:layout_width="11dp" android:layout_height="11dp" android:src="@drawable/ic_globe" android:tint="@color/secondary" />
+            <TextView android:id="@+id/net" style="@style/W.Metric" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"/>
         </LinearLayout>
-        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+        <LinearLayout android:id="@+id/band_metric" android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical"
-            android:background="@drawable/chip_bg" android:layout_marginEnd="4dp" 
-            android:paddingStart="5dp" android:paddingEnd="5dp" android:paddingTop="2dp" android:paddingBottom="2dp">
-            <ImageView android:layout_width="10dp" android:layout_height="10dp" android:src="@drawable/ic_antenna" android:tint="@color/accent" />
-            <TextView android:id="@+id/band" style="@style/W.Chip" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"/>
+            android:paddingEnd="8dp" android:paddingTop="1dp" android:paddingBottom="1dp">
+            <ImageView android:layout_width="11dp" android:layout_height="11dp" android:src="@drawable/ic_antenna" android:tint="@color/secondary" />
+            <TextView android:id="@+id/band" style="@style/W.Metric" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"/>
         </LinearLayout>
-        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+        <LinearLayout android:id="@+id/cpu_metric" android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical"
-            android:background="@drawable/chip_bg" android:layout_marginEnd="4dp" 
-            android:paddingStart="5dp" android:paddingEnd="5dp" android:paddingTop="2dp" android:paddingBottom="2dp">
-            <ImageView android:layout_width="10dp" android:layout_height="10dp" android:src="@drawable/ic_cpu" android:tint="@color/c_cpu" />
-            <TextView android:id="@+id/cpu" style="@style/W.Chip" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"/>
+            android:paddingEnd="8dp" android:paddingTop="1dp" android:paddingBottom="1dp">
+            <ImageView android:layout_width="11dp" android:layout_height="11dp" android:src="@drawable/ic_cpu" android:tint="@color/secondary" />
+            <TextView android:id="@+id/cpu" style="@style/W.Metric" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"/>
         </LinearLayout>
-        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+        <LinearLayout android:id="@+id/temp_metric" android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical"
-            android:background="@drawable/chip_bg" 
-            android:paddingStart="5dp" android:paddingEnd="5dp" android:paddingTop="2dp" android:paddingBottom="2dp">
-            <ImageView android:layout_width="10dp" android:layout_height="10dp" android:src="@drawable/ic_temp" android:tint="@color/c_temp" />
-            <TextView android:id="@+id/temp" style="@style/W.Chip" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"/>
+            android:paddingEnd="8dp" android:paddingTop="1dp" android:paddingBottom="1dp">
+            <ImageView android:layout_width="11dp" android:layout_height="11dp" android:src="@drawable/ic_temp" android:tint="@color/secondary" />
+            <TextView android:id="@+id/temp" style="@style/W.Metric" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"/>
         </LinearLayout>
     </LinearLayout>
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="2dp">
         <LinearLayout android:id="@+id/signal_group" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical">
-            <ImageView android:layout_width="11dp" android:layout_height="11dp" android:src="@drawable/ic_antenna" android:tint="@color/signal" />
+            <ImageView android:layout_width="11dp" android:layout_height="11dp" android:src="@drawable/ic_antenna" android:tint="@color/secondary" />
             <TextView android:id="@+id/signal_detail" style="@style/W.Foot" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="--" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"/>
         </LinearLayout>
         <TextView android:id="@+id/error_text" style="@style/W.Foot" android:layout_width="0dp" android:layout_weight="1"

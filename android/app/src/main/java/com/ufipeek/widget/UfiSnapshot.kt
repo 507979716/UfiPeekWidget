@@ -35,8 +35,6 @@ class UfiSnapshot {
 
     val hasData: Boolean get() = model != "--" || dailyValue != "--" || battery != "--"
 
-    val hasSignalDetails: Boolean get() = rsrp != "--" || rsrq != "--" || snr != "--"
-
     fun missingNetworkData(): List<String> = buildList {
         if (netSummary == "--") add("运营商／网络制式")
         if (signalBar == "--" || rsrp == "--" || rsrq == "--" || snr == "--") add("蜂窝信号")

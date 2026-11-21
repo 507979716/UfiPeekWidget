@@ -15,50 +15,30 @@ extension Color {
 struct UfiPalette {
     let dark: Bool
 
-    var text: Color { color(0x122C33, 0xF1F8F8) }
-    var secondary: Color { color(0x49636A, 0xADC2C7) }
-    var accent: Color { color(0x00685A, 0x74E4C6) }
-    var onAccent: Color { color(0xFFFFFF, 0x112F2B) }
-    var screen: Color { color(0xEEF5F4, 0x101C21) }
-    var surface: Color { color(0xFFFFFF, 0x192C32) }
-    var field: Color { color(0xF5F9F8, 0x131F24) }
-    var divider: Color { color(0xD1E4E0, 0x314A50) }
-    var daily: Color { color(0xD6F0E8, 0x1F403D) }
-    var monthly: Color { color(0xF5FAFB, 0x23353E) }
-    var chip: Color { color(0xFFFFFF, 0x21353B) }
-    var success: Color { color(0x087263, 0x8EDBCD) }
-    var error: Color { color(0xB23130, 0xFFB4AB) }
-    var cpu: Color { color(0x215BB0, 0x9ABCF8) }
-    var temperature: Color { color(0xAD392B, 0xFFB4A6) }
-    var memory: Color { color(0x6443B5, 0xC9B4FF) }
-    var devices: Color { color(0x6F468F, 0xDFB5FA) }
-
-    var widgetBackground: LinearGradient {
-        LinearGradient(
-            colors: [color(0xF8FCFB, 0x14262B), color(0xEAF4F3, 0x111E24)],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
+    var text: Color { color(0x1C1C1E, 0xF5F5F7) }
+    var secondary: Color { color(0x5F5F66, 0xAEAEB2) }
+    var accent: Color { color(0x005EC4, 0x64ACFF) }
+    var divider: Color { color(0xD1D1D6, 0x38383A) }
+    var error: Color { color(0xB32626, 0xFF9A91) }
+    var widgetBackground: Color { color(0xFFFFFF, 0x1C1C1E) }
 
     private func color(_ light: UInt32, _ dark: UInt32) -> Color {
         Color(hex: self.dark ? dark : light)
     }
 }
 
-private struct TrafficTile: View {
+private struct TrafficValue: View {
     let title: String
     let value: String
     let unit: String
     let p: UfiPalette
-    var primary = false
-    var numberSize: CGFloat = 24
+    var numberSize: CGFloat = 28
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(title)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(primary ? p.accent : p.secondary)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(p.secondary)
             HStack(alignment: .firstTextBaseline, spacing: 3) {
                 Text(value)
                     .font(.system(size: numberSize, weight: .bold))
@@ -73,39 +53,35 @@ private struct TrafficTile: View {
             .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .background(primary ? p.daily : p.monthly, in: RoundedRectangle(cornerRadius: 11))
         .accessibilityElement(children: .combine)
     }
 }
 
-private struct UfiChip: View {
+private struct WidgetMetric: View {
     let icon: String
     let label: String
-    let value: String
-    let tint: Color
+    let value: String?
     let p: UfiPalette
     var flexible = false
+    var alert = false
 
     var body: some View {
-        HStack(spacing: 3) {
-            Image(systemName: icon)
-                .foregroundStyle(tint)
-                .accessibilityHidden(true)
-            Text(value)
-                .foregroundStyle(p.text)
-                .lineLimit(1)
-                .truncationMode(.tail)
+        if let value = value {
+            HStack(spacing: 3) {
+                Image(systemName: icon)
+                    .foregroundStyle(alert ? p.error : p.secondary)
+                    .accessibilityHidden(true)
+                Text(value)
+                    .foregroundStyle(p.text)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            .font(.system(size: 10, weight: .medium))
+            .frame(maxWidth: flexible ? .infinity : nil, alignment: .leading)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(label))
+            .accessibilityValue(Text(value))
         }
-        .font(.system(size: 10, weight: .medium))
-        .frame(maxWidth: flexible ? .infinity : nil, alignment: .leading)
-        .padding(.horizontal, 5)
-        .padding(.vertical, 2)
-        .background(p.chip, in: RoundedRectangle(cornerRadius: 6))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(label))
-        .accessibilityValue(Text(value))
     }
 }
 
@@ -129,10 +105,10 @@ private struct WidgetHeader: View {
                     .foregroundStyle(p.secondary)
             }
             Spacer(minLength: 2)
-            if detailed {
+            if detailed && snap.signalBar != "--" {
                 HStack(spacing: 3) {
                     Image(systemName: "cellularbars", variableValue: snap.signalFraction)
-                        .foregroundStyle(p.accent)
+                        .foregroundStyle(p.secondary)
                     Text(snap.signalBar)
                 }
                 .fixedSize()
@@ -164,15 +140,16 @@ private struct WidgetFooter: View {
     var detailed = false
 
     var body: some View {
-        let signal = snap.hasSignalDetails
-            ? "RSRP \(snap.rsrp) · RSRQ \(snap.rsrq) · SNR \(snap.snr)"
-            : "蜂窝信号数据未返回"
-        let summary = detailed ? signal : snap.netSummary
+        let signal = [("RSRP", snap.rsrp), ("RSRQ", snap.rsrq), ("SNR", snap.snr)]
+            .filter { $0.1 != "--" }
+            .map { "\($0.0) \($0.1)" }
+            .joined(separator: " · ")
+        let summary = detailed ? signal : (snap.netSummary == "--" ? "" : snap.netSummary)
         HStack(spacing: 4) {
             Image(systemName: snap.error == nil ? "cellularbars" : "exclamationmark.circle.fill")
-                .foregroundStyle(snap.error == nil ? p.accent : p.error)
+                .foregroundStyle(snap.error == nil ? p.secondary : p.error)
                 .accessibilityHidden(true)
-            Text(snap.error ?? summary)
+            Text(snap.error ?? (summary.isEmpty ? "暂无蜂窝数据" : summary))
                 .foregroundStyle(snap.error == nil ? p.secondary : p.error)
                 .minimumScaleFactor(0.75)
             Spacer(minLength: 1)
@@ -198,36 +175,41 @@ struct MediumWidgetView: View {
     var body: some View {
         let p = UfiPalette(dark: scheme == .dark)
         let hasUnread = (snap.smsUnreadCount ?? 0) > 0
-        VStack(spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             WidgetHeader(snap: snap, p: p, detailed: true)
-            HStack(spacing: 5) {
-                TrafficTile(title: "今日流量", value: snap.dailyValue, unit: snap.dailyUnit, p: p, primary: true)
-                TrafficTile(title: "本月流量", value: snap.monthlyValue, unit: snap.monthlyUnit, p: p)
+            HStack(spacing: 10) {
+                TrafficValue(title: "今日流量", value: snap.dailyValue, unit: snap.dailyUnit, p: p)
+                Rectangle().fill(p.divider).frame(width: 1, height: 32)
+                TrafficValue(title: "本月流量", value: snap.monthlyValue, unit: snap.monthlyUnit, p: p)
             }
-            HStack(spacing: 4) {
-                UfiChip(icon: "network", label: "移动网络", value: snap.netSummary, tint: p.accent, p: p, flexible: true)
-                UfiChip(icon: "antenna.radiowaves.left.and.right", label: "频段", value: snap.band, tint: p.accent, p: p)
-                UfiChip(icon: "cpu", label: "CPU 占用", value: snap.cpuUsage + "%", tint: p.cpu, p: p)
-                UfiChip(icon: "thermometer.medium", label: "CPU 温度", value: snap.cpuTemp + "℃", tint: p.temperature, p: p)
+            HStack(spacing: 8) {
+                WidgetMetric(icon: "network", label: "移动网络", value: shown(snap.netSummary), p: p, flexible: true)
+                WidgetMetric(icon: "antenna.radiowaves.left.and.right", label: "频段", value: shown(snap.band), p: p)
+                WidgetMetric(icon: "cpu", label: "CPU 占用", value: shown(snap.cpuUsage).map { $0 + "%" }, p: p)
+                WidgetMetric(icon: "thermometer.medium", label: "CPU 温度", value: shown(snap.cpuTemp).map { $0 + "℃" }, p: p)
             }
-            HStack(spacing: 4) {
-                UfiChip(icon: "wifi", label: "WiFi 名称", value: snap.ssid, tint: p.accent, p: p, flexible: true)
-                UfiChip(icon: "dot.radiowaves.left.and.right", label: "WiFi 频率", value: snap.wifiBand, tint: p.accent, p: p)
-                UfiChip(icon: "memorychip", label: "内存占用", value: snap.mem, tint: p.memory, p: p)
-                UfiChip(
+            HStack(spacing: 8) {
+                WidgetMetric(icon: "wifi", label: "Wi-Fi 名称", value: shown(snap.ssid), p: p, flexible: true)
+                WidgetMetric(icon: "dot.radiowaves.left.and.right", label: "Wi-Fi 频率", value: shown(snap.wifiBand), p: p)
+                WidgetMetric(icon: "memorychip", label: "内存占用", value: shown(snap.mem), p: p)
+                WidgetMetric(
                     icon: "laptopcomputer.and.iphone", label: "连接设备",
-                    value: snap.wifiDeviceCount.map { String($0) } ?? "--", tint: p.devices, p: p
+                    value: snap.wifiDeviceCount.map { String($0) }, p: p
                 )
-                UfiChip(
+                WidgetMetric(
                     icon: hasUnread ? "envelope.badge.fill" : "envelope", label: "未读短信",
-                    value: snap.smsUnreadCount.map { String($0) } ?? "--", tint: hasUnread ? p.error : p.accent, p: p
+                    value: snap.smsUnreadCount.map { String($0) }, p: p, alert: hasUnread
                 )
             }
             WidgetFooter(snap: snap, p: p, detailed: true)
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 13)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func shown(_ value: String) -> String? {
+        value == "--" || value == "—" ? nil : value
     }
 }
 
@@ -240,7 +222,7 @@ struct SmallWidgetView: View {
         VStack(alignment: .leading, spacing: 4) {
             WidgetHeader(snap: snap, p: p)
             Spacer(minLength: 0)
-            TrafficTile(title: "今日流量", value: snap.dailyValue, unit: snap.dailyUnit, p: p, primary: true, numberSize: 29)
+            TrafficValue(title: "今日流量", value: snap.dailyValue, unit: snap.dailyUnit, p: p, numberSize: 29)
             HStack(spacing: 4) {
                 Text("本月")
                     .foregroundStyle(p.secondary)
@@ -251,7 +233,6 @@ struct SmallWidgetView: View {
             .font(.system(size: 11, weight: .semibold))
             .lineLimit(1)
             .minimumScaleFactor(0.75)
-            .padding(.horizontal, 3)
             Spacer(minLength: 0)
             WidgetFooter(snap: snap, p: p)
         }

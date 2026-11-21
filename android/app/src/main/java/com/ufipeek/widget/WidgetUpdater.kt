@@ -52,6 +52,8 @@ object WidgetUpdater {
         v.setTextViewText(R.id.model, s.model)
         v.setTextViewText(R.id.ufi_ver, "UFI v" + s.ufiVersion)
         v.setTextViewText(R.id.signal_bar, s.signalBar)
+        v.setViewVisibility(R.id.signal_bar, if (s.signalBar == "--") View.GONE else View.VISIBLE)
+        v.setViewVisibility(R.id.signal_icon, if (s.signalBar == "--") View.GONE else View.VISIBLE)
         v.setImageViewResource(R.id.bat_icon, s.batteryIconRes)
         v.setInt(R.id.bat_icon, "setColorFilter", s.batteryColor)
         v.setTextViewText(R.id.battery, s.battery + "%")
@@ -61,19 +63,24 @@ object WidgetUpdater {
         v.setTextViewText(R.id.monthly_value, s.monthlyValue)
         v.setTextViewText(R.id.monthly_unit, s.monthlyUnit)
 
-        v.setTextViewText(R.id.net, s.netSummary)
-        v.setTextViewText(R.id.band, s.band)
-        v.setTextViewText(R.id.cpu, s.cpuUsage + "%")
-        v.setTextViewText(R.id.temp, s.cpuTemp + "℃")
+        val mobile = listOf(
+            Triple(R.id.net_metric, R.id.net, s.netSummary.takeUnless { it == "--" }),
+            Triple(R.id.band_metric, R.id.band, s.band.takeUnless { it == "—" }),
+            Triple(R.id.cpu_metric, R.id.cpu, s.cpuUsage.takeUnless { it == "--" }?.plus("%")),
+            Triple(R.id.temp_metric, R.id.temp, s.cpuTemp.takeUnless { it == "--" }?.plus("℃")),
+        )
+        bindMetrics(v, R.id.mobile_metrics, mobile)
 
-        // compact 布局里没有下面这一行，RemoteViews 会自动忽略不存在的 id
         if (layout != R.layout.widget_medium_compact) {
-            v.setTextViewText(R.id.ssid, s.ssid)
-            v.setTextViewText(R.id.wifi_band, s.wifiBand)
-            v.setTextViewText(R.id.mem, s.mem)
-            v.setTextViewText(R.id.devices, s.wifiDeviceCount?.toString() ?: "--")
-            v.setTextViewText(R.id.sms, s.smsUnreadCount?.toString() ?: "--")
-            val smsColor = if ((s.smsUnreadCount ?: 0) > 0) R.color.error else R.color.accent
+            val wifi = listOf(
+                Triple(R.id.ssid_metric, R.id.ssid, s.ssid.takeUnless { it == "--" }),
+                Triple(R.id.wifi_band_metric, R.id.wifi_band, s.wifiBand.takeUnless { it == "--" }),
+                Triple(R.id.mem_metric, R.id.mem, s.mem.takeUnless { it == "--" }),
+                Triple(R.id.devices_metric, R.id.devices, s.wifiDeviceCount?.toString()),
+                Triple(R.id.sms_metric, R.id.sms, s.smsUnreadCount?.toString()),
+            )
+            bindMetrics(v, R.id.wifi_metrics, wifi)
+            val smsColor = if ((s.smsUnreadCount ?: 0) > 0) R.color.error else R.color.secondary
             v.setInt(R.id.sms_icon, "setColorFilter", ctx.getColor(smsColor))
         }
 
@@ -85,18 +92,24 @@ object WidgetUpdater {
         } else {
             v.setViewVisibility(R.id.signal_group, View.VISIBLE)
             v.setViewVisibility(R.id.error_text, View.GONE)
-            val signal = if (s.hasSignalDetails) {
-                "RSRP ${s.rsrp} · RSRQ ${s.rsrq} · SNR ${s.snr}"
-            } else {
-                "蜂窝信号数据未返回"
-            }
-            v.setTextViewText(R.id.signal_detail, signal)
+            val signal = listOf("RSRP" to s.rsrp, "RSRQ" to s.rsrq, "SNR" to s.snr)
+                .filter { (_, value) -> value != "--" }
+                .joinToString(" · ") { (label, value) -> "$label $value" }
+            v.setTextViewText(R.id.signal_detail, signal.ifEmpty { ctx.getString(R.string.widget_signal_unavailable) })
         }
         v.setTextViewText(R.id.update_time, if (refreshing) "刷新中…" else s.updatedText())
 
         v.setOnClickPendingIntent(R.id.root, if (configured) refreshIntent(ctx) else settingsIntent(ctx))
         v.setOnClickPendingIntent(R.id.top_bar, settingsIntent(ctx))
         return v
+    }
+
+    private fun bindMetrics(views: RemoteViews, row: Int, metrics: List<Triple<Int, Int, String?>>) {
+        views.setViewVisibility(row, if (metrics.any { it.third != null }) View.VISIBLE else View.GONE)
+        for ((container, text, value) in metrics) {
+            views.setViewVisibility(container, if (value != null) View.VISIBLE else View.GONE)
+            if (value != null) views.setTextViewText(text, value)
+        }
     }
 
     private fun smallViews(ctx: Context, s: UfiSnapshot, refreshing: Boolean, configured: Boolean): RemoteViews {
@@ -107,9 +120,10 @@ object WidgetUpdater {
         v.setTextViewText(R.id.battery, s.battery + "%")
         v.setTextViewText(R.id.daily_value, s.dailyValue)
         v.setTextViewText(R.id.daily_unit, s.dailyUnit)
-        v.setTextViewText(R.id.monthly, s.monthlyValue + s.monthlyUnit)
+        v.setTextViewText(R.id.monthly, listOf(s.monthlyValue, s.monthlyUnit).filter { it.isNotEmpty() }.joinToString(" "))
 
         val err = s.error
+        v.setViewVisibility(R.id.signal_icon, if (err == null && s.netSummary != "--") View.VISIBLE else View.GONE)
         if (err != null) {
             v.setViewVisibility(R.id.net, View.GONE)
             v.setViewVisibility(R.id.error_text, View.VISIBLE)
@@ -117,7 +131,7 @@ object WidgetUpdater {
         } else {
             v.setViewVisibility(R.id.net, View.VISIBLE)
             v.setViewVisibility(R.id.error_text, View.GONE)
-            v.setTextViewText(R.id.net, s.netSummary)
+            v.setTextViewText(R.id.net, s.netSummary.takeUnless { it == "--" } ?: ctx.getString(R.string.widget_signal_unavailable))
         }
         v.setTextViewText(R.id.update_time, if (refreshing) "刷新中…" else s.updatedShort())
 

@@ -5,9 +5,8 @@
     <string name="widget_small_label">UfiPeek 小号</string>
     <string name="widget_medium_desc">随身 WiFi 流量、电量、信号一览，点一下刷新</string>
     <string name="widget_small_desc">今日 / 本月流量与电量</string>
-    <string name="settings_subtitle">查看随身 WiFi 的流量、电量和信号</string>
+    <string name="widget_signal_unavailable">暂无蜂窝数据</string>
     <string name="settings_connection">连接设置</string>
-    <string name="settings_connection_hint">支持局域网与公网地址</string>
     <string name="settings_address">后台地址</string>
     <string name="default_backend_address" translatable="false">http://192.168.88.1:2333</string>
     <string name="settings_password">UFI 密码</string>

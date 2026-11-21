@@ -100,8 +100,6 @@ struct UfiSnapshot: Codable {
 
     var hasData: Bool { model != "--" || dailyValue != "--" || battery != "--" }
 
-    var hasSignalDetails: Bool { rsrp != "--" || rsrq != "--" || snr != "--" }
-
     var missingNetworkData: [String] {
         var missing = [String]()
         if netSummary == "--" { missing.append("运营商／网络制式") }

@@ -1,25 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="widget_bg">#FFF8FCFB</color>
-    <color name="widget_edge">#FFEAF4F3</color>
-    <color name="text">#FF122C33</color>
-    <color name="secondary">#FF49636A</color>
-    <color name="accent">#FF00685A</color>
-    <color name="chip_bg">#FFFFFFFF</color>
-    <color name="divider">#FFD1E4E0</color>
-    <color name="signal">#FF00685A</color>
-    <color name="c_net">#FF00685A</color>
-    <color name="c_cpu">#FF215BB0</color>
-    <color name="c_temp">#FFAD392B</color>
-    <color name="c_wifi">#FF087263</color>
-    <color name="c_mem">#FF6443B5</color>
-    <color name="c_dev">#FF6F468F</color>
-    <color name="traffic_daily">#FFD6F0E8</color>
-    <color name="traffic_monthly">#FFF5FAFB</color>
-    <color name="screen_bg">#FFEEF5F4</color>
-    <color name="surface">#FFFFFFFF</color>
-    <color name="field_bg">#FFF5F9F8</color>
-    <color name="on_accent">#FFFFFFFF</color>
-    <color name="error">#FFB23130</color>
-    <color name="success">#FF087263</color>
+    <color name="widget_bg">#FFFFFF</color>
+    <color name="text">#1C1C1E</color>
+    <color name="secondary">#5F5F66</color>
+    <color name="accent">#005EC4</color>
+    <color name="divider">#D1D1D6</color>
+    <color name="screen_bg">#F2F2F7</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="on_accent">#FFFFFF</color>
+    <color name="error">#B32626</color>
+    <color name="success">#217D40</color>
 </resources>

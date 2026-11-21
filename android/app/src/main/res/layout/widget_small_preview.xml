@@ -13,13 +13,11 @@
             android:layout_height="wrap_content" android:layout_marginStart="4dp" android:maxLines="1" android:ellipsize="end"
             android:text="U30 Air"/>
         <ImageView android:id="@+id/bat_icon" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_bat_100"
-            android:tint="@color/c_wifi"/>
+            android:tint="@color/success"/>
         <TextView android:id="@+id/battery" style="@style/W.Small" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="90%" android:layout_marginStart="2dp" android:textStyle="bold"/>
     </LinearLayout>
     <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
-        android:background="@drawable/traffic_daily_bg" android:paddingStart="6dp" android:paddingEnd="6dp"
-        android:paddingTop="2dp" android:paddingBottom="2dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
         <TextView style="@style/W.Label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="今日流量"/>
             <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:orientation="horizontal" android:baselineAligned="true">
@@ -31,14 +29,14 @@
             </LinearLayout>
     </LinearLayout>
     <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
-        android:gravity="center_vertical" android:layout_marginTop="2dp" android:paddingStart="3dp">
-        <TextView style="@style/W.LabelMuted" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="本月"/>
+        android:gravity="center_vertical" android:layout_marginTop="2dp">
+        <TextView style="@style/W.Label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="本月"/>
         <TextView android:id="@+id/monthly" style="@style/W.Title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="40.7GB" android:layout_marginStart="4dp" android:maxLines="1" android:ellipsize="end"/>
     </LinearLayout>
     <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical">
-        <ImageView android:layout_width="10dp" android:layout_height="10dp" android:src="@drawable/ic_signal" android:tint="@color/signal" />
+        <ImageView android:id="@+id/signal_icon" android:layout_width="10dp" android:layout_height="10dp" android:src="@drawable/ic_signal" android:tint="@color/secondary" />
         <TextView android:id="@+id/net" style="@style/W.Foot" android:layout_width="0dp" android:layout_weight="1"
             android:layout_height="wrap_content" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"
             android:text="中国移动 5G"/>
