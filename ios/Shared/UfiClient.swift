@@ -4,6 +4,8 @@ import CryptoKit
 // MARK: - 配置
 
 struct UfiConfig: Equatable {
+    static let defaultURL = "http://192.168.88.1:2333"
+
     var url: String
     var password: String
     var ztePassword: String
@@ -36,7 +38,8 @@ enum UfiStore {
 
     static func load() -> UfiConfig {
         let d = defaults
-        return UfiConfig(url: d.string(forKey: "url") ?? "",
+        let savedURL = d.string(forKey: "url")?.trimmed ?? ""
+        return UfiConfig(url: savedURL.isEmpty ? UfiConfig.defaultURL : savedURL,
                          password: d.string(forKey: "password") ?? "",
                          ztePassword: d.string(forKey: "zte_password") ?? "")
     }
@@ -54,7 +57,14 @@ enum UfiStore {
 
     static func lastSnapshot() -> UfiSnapshot? {
         guard let data = defaults.data(forKey: "last_snapshot") else { return nil }
-        return try? JSONDecoder().decode(UfiSnapshot.self, from: data)
+        guard var snapshot = try? JSONDecoder().decode(UfiSnapshot.self, from: data) else { return nil }
+        if snapshot.netSummary == "-- --" { snapshot.netSummary = "--" }
+        switch snapshot.wifiBand {
+        case "5G": snapshot.wifiBand = "5 GHz"
+        case "2.4G": snapshot.wifiBand = "2.4 GHz"
+        default: break
+        }
+        return snapshot
     }
 }
 
@@ -68,14 +78,15 @@ struct UfiSnapshot: Codable {
     var battery = "--"
     var batteryLevel: Double = -1
     var charging = false
-    var netSummary = "-- --"
+    var netSummary = "--"
     var signalBar = "--"
     var rsrp = "--"
     var rsrq = "--"
     var snr = "--"
     var ssid = "--"
-    var smsUnread = 0
-    var wifiDevices = "0"
+    // 旧缓存用 0 表示未知，新的可选字段只保存已确认的结果。
+    var smsUnreadCount: Int?
+    var wifiDeviceCount: Int?
     var dailyValue = "--"
     var dailyUnit = ""
     var monthlyValue = "--"
@@ -88,6 +99,19 @@ struct UfiSnapshot: Codable {
     var error: String?
 
     var hasData: Bool { model != "--" || dailyValue != "--" || battery != "--" }
+
+    var hasSignalDetails: Bool { rsrp != "--" || rsrq != "--" || snr != "--" }
+
+    var missingNetworkData: [String] {
+        var missing = [String]()
+        if netSummary == "--" { missing.append("运营商／网络制式") }
+        if signalBar == "--" || rsrp == "--" || rsrq == "--" || snr == "--" { missing.append("蜂窝信号") }
+        if band == "—" { missing.append("频段") }
+        if ssid == "--" { missing.append("Wi-Fi 名称") }
+        if wifiDeviceCount == nil { missing.append("连接设备数") }
+        if smsUnreadCount == nil { missing.append("未读短信数") }
+        return missing
+    }
 
     var batteryIcon: String {
         if charging { return "battery.100percent.bolt" }
@@ -129,9 +153,10 @@ struct UfiSnapshot: Codable {
         var s = UfiSnapshot()
         s.model = "U30 Air"; s.ufiVersion = "4.1.0"; s.cpuTemp = "48.4"; s.cpuUsage = "4"
         s.battery = "90"; s.batteryLevel = 90; s.netSummary = "中国移动 5G"; s.signalBar = "5"
-        s.rsrp = "-90dBm"; s.rsrq = "-6"; s.snr = "12"; s.ssid = "ZTE_E8CDF6"; s.wifiDevices = "2"
+        s.rsrp = "-90dBm"; s.rsrq = "-6"; s.snr = "12"; s.ssid = "ZTE_E8CDF6"
+        s.wifiDeviceCount = 2; s.smsUnreadCount = 0
         s.dailyValue = "9.88"; s.dailyUnit = "GB"; s.monthlyValue = "40.7"; s.monthlyUnit = "GB"
-        s.band = "N41"; s.wifiBand = "5G"; s.mem = "58%"
+        s.band = "N41"; s.wifiBand = "5 GHz"; s.mem = "58%"
         return s
     }
 }
@@ -354,15 +379,18 @@ struct UfiClient {
 
         let provider = pick(g["network_provider"])
         let netType = normNetType(str(g["network_type"]))
-        s.netSummary = (provider == "--" && netType == "--") ? "-- --" : provider + " " + netType
+        let network = [provider, netType].filter { $0 != "--" }.joined(separator: " ")
+        s.netSummary = network.isEmpty ? "--" : network
         s.signalBar = pick(g["network_signalbar"])
 
-        if let rsrp = num(str(g["Z5g_rsrp"]) ?? str(g["lte_rsrp"])) { s.rsrp = roundText(rsrp, 0) + "dBm" }
+        if let rsrp = num(g["Z5g_rsrp"]) ?? num(g["lte_rsrp"]) { s.rsrp = roundText(rsrp, 0) + "dBm" }
         s.rsrq = pick(g["nr_rsrq"], g["lte_rsrq"])
         s.snr = pick(g["Nr_snr"], g["lte_snr"])
 
         s.ssid = pick(g["SSID1"])
-        s.smsUnread = Int(str(g["sms_unread_num"]) ?? "") ?? 0
+        if let unread = Int(str(g["sms_unread_num"]) ?? ""), unread >= 0 {
+            s.smsUnreadCount = unread
+        }
 
         let daily = splitBytes(formatBytes(d["daily_data"]))
         s.dailyValue = daily.0; s.dailyUnit = daily.1
@@ -373,16 +401,15 @@ struct UfiClient {
         if let str = sta as? String, !str.trimmed.isEmpty, let data = str.data(using: .utf8) {
             sta = try? JSONSerialization.jsonObject(with: data)
         }
-        var count = 0
-        if let arr = sta as? [Any] { count = arr.count }
-        else if let dict = sta as? [String: Any] { count = dict.count }
-        s.wifiDevices = String(count)
+        if let arr = sta as? [Any] { s.wifiDeviceCount = arr.count }
+        else if let dict = sta as? [String: Any] { s.wifiDeviceCount = dict.count }
 
         let nr = str(g["Nr_bands"]) ?? "", lte = str(g["Lte_bands"]) ?? ""
         if isDigits(nr) { s.band = "N" + nr }
         else if isDigits(lte) { s.band = "B" + lte }
 
-        s.wifiBand = freq > 0 ? (freq >= 4000 ? "5G" : "2.4G") : "--"
+        if freq >= 4000 { s.wifiBand = "5 GHz" }
+        else if freq > 0 { s.wifiBand = "2.4 GHz" }
         if memTotal > 0 && memAvail >= 0 {
             s.mem = String(Int((Double(memTotal - memAvail) / Double(memTotal) * 100).rounded())) + "%"
         }

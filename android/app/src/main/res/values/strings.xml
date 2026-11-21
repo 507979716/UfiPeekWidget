@@ -9,7 +9,7 @@
     <string name="settings_connection">连接设置</string>
     <string name="settings_connection_hint">支持局域网与公网地址</string>
     <string name="settings_address">后台地址</string>
-    <string name="settings_address_hint">http://192.168.0.1:2333</string>
+    <string name="default_backend_address" translatable="false">http://192.168.88.1:2333</string>
     <string name="settings_password">UFI 密码</string>
     <string name="settings_password_hint">UFI-TOOLS 后台密码</string>
     <string name="settings_zte_password">ZTE 密码（选填）</string>

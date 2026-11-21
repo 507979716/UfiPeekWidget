@@ -76,7 +76,7 @@ SAMPLE = {
     "model": "U30 Air", "ufi_ver": "UFI v4.1.0", "signal_bar": "5", "battery": "90%",
     "daily_value": "9.88", "daily_unit": "GB", "monthly_value": "40.7", "monthly_unit": "GB",
     "net": "中国移动 5G", "band": "N41", "cpu": "4%", "temp": "48.4℃",
-    "ssid": "ZTE_E8CDF6", "wifi_band": "5G", "mem": "58%", "devices": "2", "sms": "0",
+    "ssid": "ZTE_E8CDF6", "wifi_band": "5 GHz", "mem": "58%", "devices": "2", "sms": "0",
     "signal_detail": "RSRP -90dBm · RSRQ -6 · SNR 12", "update_time": "08-05 12:59",
     "monthly": "40.7GB", "error_text": "",
 }

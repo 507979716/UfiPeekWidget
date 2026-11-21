@@ -14,14 +14,14 @@ class UfiSnapshot {
     var battery = "--"
     var batteryLevel = -1.0
     var charging = false
-    var netSummary = "-- --"
+    var netSummary = "--"
     var signalBar = "--"
     var rsrp = "--"
     var rsrq = "--"
     var snr = "--"
     var ssid = "--"
-    var smsUnread = 0
-    var wifiDevices = "0"
+    var smsUnreadCount: Int? = null
+    var wifiDeviceCount: Int? = null
     var dailyValue = "--"
     var dailyUnit = ""
     var monthlyValue = "--"
@@ -34,6 +34,17 @@ class UfiSnapshot {
     var error: String? = null
 
     val hasData: Boolean get() = model != "--" || dailyValue != "--" || battery != "--"
+
+    val hasSignalDetails: Boolean get() = rsrp != "--" || rsrq != "--" || snr != "--"
+
+    fun missingNetworkData(): List<String> = buildList {
+        if (netSummary == "--") add("运营商／网络制式")
+        if (signalBar == "--" || rsrp == "--" || rsrq == "--" || snr == "--") add("蜂窝信号")
+        if (band == "—") add("频段")
+        if (ssid == "--") add("Wi-Fi 名称")
+        if (wifiDeviceCount == null) add("连接设备数")
+        if (smsUnreadCount == null) add("未读短信数")
+    }
 
     val batteryIconRes: Int
         get() = when {
@@ -63,7 +74,7 @@ class UfiSnapshot {
         .put("model", model).put("ufiVersion", ufiVersion).put("cpuTemp", cpuTemp).put("cpuUsage", cpuUsage)
         .put("battery", battery).put("batteryLevel", batteryLevel).put("charging", charging)
         .put("netSummary", netSummary).put("signalBar", signalBar).put("rsrp", rsrp).put("rsrq", rsrq)
-        .put("snr", snr).put("ssid", ssid).put("smsUnread", smsUnread).put("wifiDevices", wifiDevices)
+        .put("snr", snr).put("ssid", ssid).put("smsUnreadCount", smsUnreadCount).put("wifiDeviceCount", wifiDeviceCount)
         .put("dailyValue", dailyValue).put("dailyUnit", dailyUnit).put("monthlyValue", monthlyValue)
         .put("monthlyUnit", monthlyUnit).put("band", band).put("wifiBand", wifiBand).put("mem", mem)
         .put("updatedAt", updatedAt).put("zreqOK", zreqOK)
@@ -82,20 +93,24 @@ class UfiSnapshot {
                     battery = o.optString("battery", battery)
                     batteryLevel = o.optDouble("batteryLevel", batteryLevel)
                     charging = o.optBoolean("charging", charging)
-                    netSummary = o.optString("netSummary", netSummary)
+                    netSummary = o.optString("netSummary", netSummary).let { if (it == "-- --") "--" else it }
                     signalBar = o.optString("signalBar", signalBar)
                     rsrp = o.optString("rsrp", rsrp)
                     rsrq = o.optString("rsrq", rsrq)
                     snr = o.optString("snr", snr)
                     ssid = o.optString("ssid", ssid)
-                    smsUnread = o.optInt("smsUnread", smsUnread)
-                    wifiDevices = o.optString("wifiDevices", wifiDevices)
+                    smsUnreadCount = o.optInt("smsUnreadCount", -1).takeIf { it >= 0 }
+                    wifiDeviceCount = o.optInt("wifiDeviceCount", -1).takeIf { it >= 0 }
                     dailyValue = o.optString("dailyValue", dailyValue)
                     dailyUnit = o.optString("dailyUnit", dailyUnit)
                     monthlyValue = o.optString("monthlyValue", monthlyValue)
                     monthlyUnit = o.optString("monthlyUnit", monthlyUnit)
                     band = o.optString("band", band)
-                    wifiBand = o.optString("wifiBand", wifiBand)
+                    wifiBand = when (val saved = o.optString("wifiBand", wifiBand)) {
+                        "5G" -> "5 GHz"
+                        "2.4G" -> "2.4 GHz"
+                        else -> saved
+                    }
                     mem = o.optString("mem", mem)
                     updatedAt = o.optLong("updatedAt", updatedAt)
                     zreqOK = o.optBoolean("zreqOK", zreqOK)
@@ -108,9 +123,10 @@ class UfiSnapshot {
         fun placeholder(): UfiSnapshot = UfiSnapshot().apply {
             model = "U30 Air"; ufiVersion = "4.1.0"; cpuTemp = "48.4"; cpuUsage = "4"
             battery = "90"; batteryLevel = 90.0; netSummary = "中国移动 5G"; signalBar = "5"
-            rsrp = "-90dBm"; rsrq = "-6"; snr = "12"; ssid = "ZTE_E8CDF6"; wifiDevices = "2"
+            rsrp = "-90dBm"; rsrq = "-6"; snr = "12"; ssid = "ZTE_E8CDF6"
+            wifiDeviceCount = 2; smsUnreadCount = 0
             dailyValue = "9.88"; dailyUnit = "GB"; monthlyValue = "40.7"; monthlyUnit = "GB"
-            band = "N41"; wifiBand = "5G"; mem = "58%"
+            band = "N41"; wifiBand = "5 GHz"; mem = "58%"
         }
     }
 }
@@ -121,7 +137,7 @@ object Prefs {
     fun load(ctx: Context): UfiConfig {
         val p = sp(ctx)
         return UfiConfig(
-            p.getString("url", "") ?: "",
+            p.getString("url", null)?.takeUnless { it.isBlank() } ?: ctx.getString(R.string.default_backend_address),
             p.getString("password", "") ?: "",
             p.getString("zte_password", "") ?: ""
         )

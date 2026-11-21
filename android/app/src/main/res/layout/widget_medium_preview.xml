@@ -94,7 +94,7 @@
             android:background="@drawable/chip_bg" android:layout_marginEnd="4dp" 
             android:paddingStart="5dp" android:paddingEnd="5dp" android:paddingTop="2dp" android:paddingBottom="2dp">
             <ImageView android:layout_width="10dp" android:layout_height="10dp" android:src="@drawable/ic_waves" android:tint="@color/c_wifi" />
-            <TextView android:id="@+id/wifi_band" style="@style/W.Chip" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5G" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"/>
+            <TextView android:id="@+id/wifi_band" style="@style/W.Chip" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="5 GHz" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"/>
         </LinearLayout>
         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical"

@@ -166,15 +166,16 @@ class UfiClient(private val cfg: UfiConfig) {
 
             val provider = pick(g.opt("network_provider"))
             val netType = normNetType(str(g.opt("network_type")))
-            s.netSummary = if (provider == "--" && netType == "--") "-- --" else "$provider $netType"
+            s.netSummary = listOf(provider, netType).filter { it != "--" }.joinToString(" ").ifEmpty { "--" }
             s.signalBar = pick(g.opt("network_signalbar"))
 
-            num(str(g.opt("Z5g_rsrp")) ?: str(g.opt("lte_rsrp")))?.let { s.rsrp = roundText(it, 0) + "dBm" }
+            val rsrp = num(g.opt("Z5g_rsrp")) ?: num(g.opt("lte_rsrp"))
+            rsrp?.let { s.rsrp = roundText(it, 0) + "dBm" }
             s.rsrq = pick(g.opt("nr_rsrq"), g.opt("lte_rsrq"))
             s.snr = pick(g.opt("Nr_snr"), g.opt("lte_snr"))
 
             s.ssid = pick(g.opt("SSID1"))
-            s.smsUnread = str(g.opt("sms_unread_num"))?.toIntOrNull() ?: 0
+            s.smsUnreadCount = str(g.opt("sms_unread_num"))?.toIntOrNull()?.takeIf { it >= 0 }
 
             val daily = splitBytes(formatBytes(d.opt("daily_data")))
             s.dailyValue = daily.first; s.dailyUnit = daily.second
@@ -192,12 +193,11 @@ class UfiClient(private val cfg: UfiConfig) {
                     }
                 } catch (e: Exception) { null }
             } else rawSta
-            val count = when (sta) {
+            s.wifiDeviceCount = when (sta) {
                 is JSONArray -> sta.length()
                 is JSONObject -> sta.length()
-                else -> 0
+                else -> null
             }
-            s.wifiDevices = count.toString()
 
             val nr = str(g.opt("Nr_bands")) ?: ""
             val lte = str(g.opt("Lte_bands")) ?: ""
@@ -207,7 +207,11 @@ class UfiClient(private val cfg: UfiConfig) {
                 else -> "—"
             }
 
-            s.wifiBand = if (freq > 0) (if (freq >= 4000) "5G" else "2.4G") else "--"
+            s.wifiBand = when {
+                freq >= 4000 -> "5 GHz"
+                freq > 0 -> "2.4 GHz"
+                else -> "--"
+            }
             if (memTotal > 0 && memAvail >= 0) {
                 s.mem = ((memTotal - memAvail).toDouble() / memTotal * 100).roundToInt().toString() + "%"
             }

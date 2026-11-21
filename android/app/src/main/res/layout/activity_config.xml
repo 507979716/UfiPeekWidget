@@ -89,7 +89,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:hint="@string/settings_address_hint"
+                android:hint="@string/default_backend_address"
                 android:inputType="textUri"
                 android:importantForAutofill="no"
                 android:singleLine="true" />

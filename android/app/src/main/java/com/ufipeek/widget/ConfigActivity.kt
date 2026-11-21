@@ -75,8 +75,12 @@ class ConfigActivity : Activity() {
                 if (error != null) {
                     showStatus(error, R.color.error)
                 } else {
-                    val source = if (s.zreqOK) "zreq 自动登录" else "直接读取 goform"
-                    showStatus("连接成功 · $source", R.color.success)
+                    val missing = s.missingNetworkData()
+                    if (missing.isEmpty()) {
+                        showStatus("连接成功", R.color.success)
+                    } else {
+                        showStatus("已连接，未读到：${missing.joinToString("、")}", R.color.secondary)
+                    }
                 }
                 showPreview(s)
             }

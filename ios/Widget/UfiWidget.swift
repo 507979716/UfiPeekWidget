@@ -7,7 +7,7 @@ struct UfiConfigIntent: WidgetConfigurationIntent {
     static var title: LocalizedStringResource = "UfiPeek 设置"
     static var description = IntentDescription("填写 UFI-TOOLS 后台地址与密码。留空则使用 UfiPeek App 内保存的设置。")
 
-    @Parameter(title: "后台地址", description: "例如 http://192.168.0.1:2333")
+    @Parameter(title: "后台地址", description: "留空时使用 App 设置，未设置则使用 http://192.168.88.1:2333")
     var url: String?
 
     @Parameter(title: "UFI 密码")

@@ -71,9 +71,10 @@ object WidgetUpdater {
             v.setTextViewText(R.id.ssid, s.ssid)
             v.setTextViewText(R.id.wifi_band, s.wifiBand)
             v.setTextViewText(R.id.mem, s.mem)
-            v.setTextViewText(R.id.devices, s.wifiDevices)
-            v.setTextViewText(R.id.sms, s.smsUnread.toString())
-            v.setInt(R.id.sms_icon, "setColorFilter", ctx.getColor(if (s.smsUnread > 0) R.color.error else R.color.accent))
+            v.setTextViewText(R.id.devices, s.wifiDeviceCount?.toString() ?: "--")
+            v.setTextViewText(R.id.sms, s.smsUnreadCount?.toString() ?: "--")
+            val smsColor = if ((s.smsUnreadCount ?: 0) > 0) R.color.error else R.color.accent
+            v.setInt(R.id.sms_icon, "setColorFilter", ctx.getColor(smsColor))
         }
 
         val err = s.error
@@ -84,7 +85,12 @@ object WidgetUpdater {
         } else {
             v.setViewVisibility(R.id.signal_group, View.VISIBLE)
             v.setViewVisibility(R.id.error_text, View.GONE)
-            v.setTextViewText(R.id.signal_detail, "RSRP ${s.rsrp} · RSRQ ${s.rsrq} · SNR ${s.snr}")
+            val signal = if (s.hasSignalDetails) {
+                "RSRP ${s.rsrp} · RSRQ ${s.rsrq} · SNR ${s.snr}"
+            } else {
+                "蜂窝信号数据未返回"
+            }
+            v.setTextViewText(R.id.signal_detail, signal)
         }
         v.setTextViewText(R.id.update_time, if (refreshing) "刷新中…" else s.updatedText())
 

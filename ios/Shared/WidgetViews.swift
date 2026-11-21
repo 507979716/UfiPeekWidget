@@ -164,7 +164,10 @@ private struct WidgetFooter: View {
     var detailed = false
 
     var body: some View {
-        let summary = detailed ? "RSRP \(snap.rsrp) · RSRQ \(snap.rsrq) · SNR \(snap.snr)" : snap.netSummary
+        let signal = snap.hasSignalDetails
+            ? "RSRP \(snap.rsrp) · RSRQ \(snap.rsrq) · SNR \(snap.snr)"
+            : "蜂窝信号数据未返回"
+        let summary = detailed ? signal : snap.netSummary
         HStack(spacing: 4) {
             Image(systemName: snap.error == nil ? "cellularbars" : "exclamationmark.circle.fill")
                 .foregroundStyle(snap.error == nil ? p.accent : p.error)
@@ -194,6 +197,7 @@ struct MediumWidgetView: View {
 
     var body: some View {
         let p = UfiPalette(dark: scheme == .dark)
+        let hasUnread = (snap.smsUnreadCount ?? 0) > 0
         VStack(spacing: 4) {
             WidgetHeader(snap: snap, p: p, detailed: true)
             HStack(spacing: 5) {
@@ -210,10 +214,13 @@ struct MediumWidgetView: View {
                 UfiChip(icon: "wifi", label: "WiFi 名称", value: snap.ssid, tint: p.accent, p: p, flexible: true)
                 UfiChip(icon: "dot.radiowaves.left.and.right", label: "WiFi 频率", value: snap.wifiBand, tint: p.accent, p: p)
                 UfiChip(icon: "memorychip", label: "内存占用", value: snap.mem, tint: p.memory, p: p)
-                UfiChip(icon: "laptopcomputer.and.iphone", label: "连接设备", value: snap.wifiDevices, tint: p.devices, p: p)
                 UfiChip(
-                    icon: snap.smsUnread > 0 ? "envelope.badge.fill" : "envelope",
-                    label: "未读短信", value: String(snap.smsUnread), tint: snap.smsUnread > 0 ? p.error : p.accent, p: p
+                    icon: "laptopcomputer.and.iphone", label: "连接设备",
+                    value: snap.wifiDeviceCount.map { String($0) } ?? "--", tint: p.devices, p: p
+                )
+                UfiChip(
+                    icon: hasUnread ? "envelope.badge.fill" : "envelope", label: "未读短信",
+                    value: snap.smsUnreadCount.map { String($0) } ?? "--", tint: hasUnread ? p.error : p.accent, p: p
                 )
             }
             WidgetFooter(snap: snap, p: p, detailed: true)

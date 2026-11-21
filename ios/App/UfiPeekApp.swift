@@ -88,7 +88,7 @@ struct ContentView: View {
                     .foregroundStyle(p.secondary)
             }
             field("后台地址", icon: "link") {
-                TextField("http://192.168.0.1:2333", text: $url)
+                TextField(UfiConfig.defaultURL, text: $url)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -124,12 +124,20 @@ struct ContentView: View {
                 .font(.footnote)
                 .foregroundStyle(p.secondary)
             } else if let result = testResult {
-                Label(
-                    result.error ?? (result.zreqOK ? "连接成功 · zreq 自动登录" : "连接成功 · 直接读取 goform"),
-                    systemImage: result.error == nil ? "checkmark.circle.fill" : "exclamationmark.circle.fill"
-                )
-                .font(.footnote)
-                .foregroundStyle(result.error == nil ? p.success : p.error)
+                let missing = result.missingNetworkData
+                if let error = result.error {
+                    Label(error, systemImage: "exclamationmark.circle.fill")
+                        .font(.footnote)
+                        .foregroundStyle(p.error)
+                } else if missing.isEmpty {
+                    Label("连接成功", systemImage: "checkmark.circle.fill")
+                        .font(.footnote)
+                        .foregroundStyle(p.success)
+                } else {
+                    Label("已连接，未读到：\(missing.joined(separator: "、"))", systemImage: "info.circle")
+                        .font(.footnote)
+                        .foregroundStyle(p.secondary)
+                }
             }
         }
         .padding(16)
