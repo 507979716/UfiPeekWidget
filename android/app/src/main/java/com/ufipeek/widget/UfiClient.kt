@@ -324,7 +324,7 @@ class UfiClient(private val cfg: UfiConfig) {
             val zreqOK = g != null
             if (g == null) {
                 g = try { goformGet() } catch (e: Exception) { JSONObject() }
-                if (str(g.opt("loginfo")) == "no") {
+                if (str(g?.opt("loginfo")) == "no") {
                     val ok = try { loginZTE() } catch (e: Exception) { false }
                     if (ok) g = try { goformGet() } catch (e: Exception) { g }
                 }
