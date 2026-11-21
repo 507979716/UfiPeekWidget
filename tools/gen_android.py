@@ -10,7 +10,7 @@ A = 'xmlns:android="http://schemas.android.com/apk/res/android"'
 def w(path, text):
     full = os.path.join(RES, path)
     os.makedirs(os.path.dirname(full), exist_ok=True)
-    with open(full, "w", encoding="utf-8") as f:
+    with open(full, "w", encoding="utf-8", newline="\n") as f:
         f.write(text)
 
 
@@ -21,14 +21,22 @@ for name, parts in ICONS.items():
 # ---------- shapes ----------
 w("drawable/widget_bg.xml", f'''<?xml version="1.0" encoding="utf-8"?>
 <shape {A} android:shape="rectangle">
-    <solid android:color="@color/widget_bg"/>
-    <corners android:radius="20dp"/>
+    <gradient android:startColor="@color/widget_bg" android:endColor="@color/widget_edge" android:angle="315"/>
+    <stroke android:width="1dp" android:color="@color/divider"/>
+    <corners android:radius="22dp"/>
 </shape>
 ''')
 w("drawable/chip_bg.xml", f'''<?xml version="1.0" encoding="utf-8"?>
 <shape {A} android:shape="rectangle">
     <solid android:color="@color/chip_bg"/>
     <corners android:radius="8dp"/>
+</shape>
+''')
+for period in ("daily", "monthly"):
+    w(f"drawable/traffic_{period}_bg.xml", f'''<?xml version="1.0" encoding="utf-8"?>
+<shape {A} android:shape="rectangle">
+    <solid android:color="@color/traffic_{period}"/>
+    <corners android:radius="12dp"/>
 </shape>
 ''')
 
@@ -92,98 +100,109 @@ def img(src, size, tint=None, id_=None, extra=""):
             f'android:src="@drawable/{src}" {t}{extra}/>')
 
 
-def chip(id_, icon, tint, sample, text_extra="", icon_id=None, last=False):
+def chip(id_, icon, tint, sample, flexible=False, icon_id=None, last=False):
     me = "" if last else 'android:layout_marginEnd="4dp" '
-    return f'''        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+    width = 'android:layout_width="0dp" android:layout_weight="1"' if flexible else 'android:layout_width="wrap_content"'
+    return f'''        <LinearLayout {width} android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical"
             android:background="@drawable/chip_bg" {me}
-            android:paddingStart="5dp" android:paddingEnd="6dp" android:paddingTop="2dp" android:paddingBottom="2dp">
-            {img(icon, 11, tint, icon_id)}
-            {txt(id_, "W.Chip", sample, 'android:layout_marginStart="3dp" ' + text_extra)}
+            android:paddingStart="5dp" android:paddingEnd="5dp" android:paddingTop="2dp" android:paddingBottom="2dp">
+            {img(icon, 10, tint, icon_id)}
+            {txt(id_, "W.Chip", sample, 'android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"')}
         </LinearLayout>'''
 
 
-def top_bar(sample):
+def top_bar(sample, compact=False):
+    battery_size = 15 if compact else 17
     return f'''    <LinearLayout android:id="@+id/top_bar" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical">
-        {img("ic_router", 14, "router")}
-        {txt("model", "W.Title", sample, 'android:layout_marginStart="4dp" android:maxLines="1"')}
+        {img("ic_router", 14, "accent")}
+        {txt("model", "W.Title", sample, 'android:layout_marginStart="5dp" android:maxWidth="104dp" android:maxLines="1" android:ellipsize="end"')}
         <TextView android:id="@+id/ufi_ver" style="@style/W.Small" android:layout_width="0dp" android:layout_weight="1"
-            android:layout_height="wrap_content" android:layout_marginStart="6dp" android:maxLines="1" android:ellipsize="end"
+            android:layout_height="wrap_content" android:layout_marginStart="6dp" android:layout_marginEnd="4dp" android:maxLines="1" android:ellipsize="end"
             android:text="{SAMPLE['ufi_ver'] if sample else 'UFI v--'}"/>
-        {img("ic_signal", 12, "text")}
-        {txt("signal_bar", "W.Title", sample, 'android:layout_marginStart="3dp"')}
-        <TextView style="@style/W.Small" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:layout_marginStart="5dp" android:layout_marginEnd="5dp" android:text="|" android:textColor="@color/divider"/>
-        <ImageView android:id="@+id/bat_icon" android:layout_width="18dp" android:layout_height="18dp" android:src="@drawable/ic_bat_100"
-            android:tint="#FF16A34A"/>
-        {txt("battery", "W.Title", sample, 'android:layout_marginStart="2dp"')}
+        {img("ic_signal", 12, "signal")}
+        {txt("signal_bar", "W.Small", sample, 'android:layout_marginStart="3dp"')}
+        <ImageView android:id="@+id/bat_icon" android:layout_width="{battery_size}dp" android:layout_height="{battery_size}dp" android:src="@drawable/ic_bat_100"
+            android:layout_marginStart="7dp" android:tint="@color/c_wifi"/>
+        {txt("battery", "W.Title", sample, 'android:layout_marginStart="3dp"')}
     </LinearLayout>'''
 
 
-def traffic_block(prefix, label, sample):
+def traffic_value(prefix, sample, style):
+    return f'''            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:baselineAligned="true">
+                <TextView android:id="@+id/{prefix}_value" style="@style/{style}" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:layout_weight="1" android:maxLines="1" android:ellipsize="end"
+                    android:autoSizeTextType="uniform" android:autoSizeMinTextSize="12sp"
+                    android:autoSizeStepGranularity="1sp" android:text="{SAMPLE[prefix + '_value'] if sample else '--'}"/>
+                {txt(prefix + "_unit", "W.Unit", sample, 'android:layout_marginStart="3dp"')}
+            </LinearLayout>'''
+
+
+def traffic_block(prefix, label, sample, compact=False):
+    value_style = "W.BigCompact" if compact else "W.Big"
+    vertical_padding = "0dp" if compact else "2dp"
+    label_style = "W.Label" if prefix == "daily" else "W.LabelMuted"
     return f'''        <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
-            android:orientation="vertical" android:gravity="center_horizontal">
-            <TextView style="@style/W.Label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="{label}"/>
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
-                android:baselineAligned="true">
-                {txt(prefix + "_value", "W.Big", sample)}
-                {txt(prefix + "_unit", "W.Unit", sample, 'android:layout_marginStart="2dp"')}
-            </LinearLayout>
+            android:orientation="vertical" android:background="@drawable/traffic_{prefix}_bg"
+            android:paddingStart="8dp" android:paddingEnd="8dp" android:paddingTop="{vertical_padding}" android:paddingBottom="{vertical_padding}">
+            <TextView style="@style/{label_style}" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="{label}"/>
+{traffic_value(prefix, sample, value_style)}
         </LinearLayout>'''
 
 
-def traffic(sample):
+def traffic(sample, compact=False):
     return f'''    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="2dp" android:baselineAligned="false">
-{traffic_block("daily", "今日流量", sample)}
-        <FrameLayout android:layout_width="1dp" android:layout_height="30dp" android:background="@color/divider"/>
-{traffic_block("monthly", "本月流量", sample)}
+        android:orientation="horizontal" android:layout_marginTop="{2 if compact else 4}dp" android:baselineAligned="false">
+{traffic_block("daily", "今日流量", sample, compact)}
+        <FrameLayout android:layout_width="5dp" android:layout_height="1dp"/>
+{traffic_block("monthly", "本月流量", sample, compact)}
     </LinearLayout>'''
 
 
-def row(children):
+def row(children, compact=False):
     return f'''    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="center" android:layout_marginTop="4dp">
+        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="{2 if compact else 3}dp">
 {chr(10).join(children)}
     </LinearLayout>'''
 
 
-def row1(sample):
+def row1(sample, compact=False):
     return row([
-        chip("net", "ic_globe", "c_net", sample, 'android:maxWidth="96dp" android:maxLines="1" android:ellipsize="end"'),
+        chip("net", "ic_globe", "c_net", sample, flexible=True),
         chip("band", "ic_antenna", "accent", sample),
         chip("cpu", "ic_cpu", "c_cpu", sample),
         chip("temp", "ic_temp", "c_temp", sample, last=True),
-    ])
+    ], compact)
 
 
 def row2(sample):
     return row([
-        chip("ssid", "ic_wifi", "c_wifi", sample, 'android:maxWidth="84dp" android:maxLines="1" android:ellipsize="end"'),
+        chip("ssid", "ic_wifi", "c_wifi", sample, flexible=True),
         chip("wifi_band", "ic_waves", "c_wifi", sample),
         chip("mem", "ic_memory", "c_mem", sample),
         chip("devices", "ic_devices", "c_dev", sample),
-        chip("sms", "ic_mail", None, sample, icon_id="sms_icon", last=True),
+        chip("sms", "ic_mail", "accent", sample, icon_id="sms_icon", last=True),
     ])
 
 
-def bottom(sample):
+def bottom(sample, compact=False):
     return f'''    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="horizontal" android:gravity="center" android:layout_marginTop="4dp">
-        <LinearLayout android:id="@+id/signal_group" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="{2 if compact else 3}dp">
+        <LinearLayout android:id="@+id/signal_group" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="center_vertical">
             {img("ic_antenna", 11, "signal")}
-            {txt("signal_detail", "W.Foot", sample, 'android:layout_marginStart="3dp" android:maxLines="1"')}
+            {txt("signal_detail", "W.Foot", sample, 'android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"')}
         </LinearLayout>
-        <TextView android:id="@+id/error_text" style="@style/W.Foot" android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:textColor="#FFDC2626" android:maxLines="1" android:ellipsize="end" android:maxWidth="200dp" android:visibility="gone"/>
-        {img("ic_clock", 11, "clock", extra='android:layout_marginStart="8dp"')}
+        <TextView android:id="@+id/error_text" style="@style/W.Foot" android:layout_width="0dp" android:layout_weight="1"
+            android:layout_height="wrap_content" android:textColor="@color/error" android:maxLines="1" android:ellipsize="end" android:visibility="gone"/>
+        {img("ic_clock", 11, "secondary", extra='android:layout_marginStart="5dp"')}
         {txt("update_time", "W.Foot", sample, 'android:layout_marginStart="3dp"')}
     </LinearLayout>'''
 
 
-def root(inner, pad_v="7dp", pad_h="10dp"):
+def root(inner, pad_v="5dp", pad_h="9dp"):
     return f'''<?xml version="1.0" encoding="utf-8"?>
 <!-- 由 tools/gen_android.py 生成 -->
 <LinearLayout {A}
@@ -202,44 +221,45 @@ def medium(sample):
 
 
 def medium_compact(sample):
-    return root("\n".join([top_bar(sample), traffic(sample), row1(sample), bottom(sample)]), pad_v="5dp")
+    blocks = [top_bar(sample, True), traffic(sample, True), row1(sample, True), bottom(sample, True)]
+    return root("\n".join(blocks), pad_v="2dp")
 
 
 def small(sample):
     return root(f'''    <LinearLayout android:id="@+id/top_bar" android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical">
-        {img("ic_router", 13, "router")}
+        {img("ic_router", 13, "accent")}
         <TextView android:id="@+id/model" style="@style/W.Title" android:layout_width="0dp" android:layout_weight="1"
             android:layout_height="wrap_content" android:layout_marginStart="4dp" android:maxLines="1" android:ellipsize="end"
             android:text="{SAMPLE['model'] if sample else '--'}"/>
         <ImageView android:id="@+id/bat_icon" android:layout_width="16dp" android:layout_height="16dp" android:src="@drawable/ic_bat_100"
-            android:tint="#FF16A34A"/>
+            android:tint="@color/c_wifi"/>
         {txt("battery", "W.Small", sample, 'android:layout_marginStart="2dp" android:textStyle="bold"')}
     </LinearLayout>
     <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
-    <TextView style="@style/W.Label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="今日流量"/>
-    <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
-        android:baselineAligned="true">
-        {txt("daily_value", "W.BigSmall", sample)}
-        {txt("daily_unit", "W.Unit", sample, 'android:layout_marginStart="2dp"')}
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+        android:background="@drawable/traffic_daily_bg" android:paddingStart="6dp" android:paddingEnd="6dp"
+        android:paddingTop="2dp" android:paddingBottom="2dp">
+        <TextView style="@style/W.Label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="今日流量"/>
+{traffic_value("daily", sample, "W.BigSmall")}
     </LinearLayout>
     <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="horizontal"
-        android:gravity="center_vertical">
-        <TextView style="@style/W.Label" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="本月"/>
-        {txt("monthly", "W.Title", sample, 'android:layout_marginStart="4dp"')}
+        android:gravity="center_vertical" android:layout_marginTop="2dp" android:paddingStart="3dp">
+        <TextView style="@style/W.LabelMuted" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="本月"/>
+        {txt("monthly", "W.Title", sample, 'android:layout_marginStart="4dp" android:maxLines="1" android:ellipsize="end"')}
     </LinearLayout>
     <FrameLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical">
-        {img("ic_signal", 10, "text")}
+        {img("ic_signal", 10, "signal")}
         <TextView android:id="@+id/net" style="@style/W.Foot" android:layout_width="0dp" android:layout_weight="1"
             android:layout_height="wrap_content" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"
             android:text="{SAMPLE['net'] if sample else '--'}"/>
         <TextView android:id="@+id/error_text" style="@style/W.Foot" android:layout_width="0dp" android:layout_weight="1"
             android:layout_height="wrap_content" android:layout_marginStart="3dp" android:maxLines="1" android:ellipsize="end"
-            android:textColor="#FFDC2626" android:visibility="gone"/>
+            android:textColor="@color/error" android:visibility="gone"/>
         {txt("update_time", "W.Foot", sample, 'android:layout_marginStart="4dp"')}
-    </LinearLayout>''', pad_v="10dp", pad_h="12dp")
+    </LinearLayout>''', pad_v="6dp", pad_h="8dp")
 
 
 w("layout/widget_medium.xml", medium(False))

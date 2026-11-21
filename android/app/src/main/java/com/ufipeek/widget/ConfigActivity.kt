@@ -2,6 +2,7 @@ package com.ufipeek.widget
 
 import android.app.Activity
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
@@ -34,7 +35,7 @@ class ConfigActivity : Activity() {
         btnTest.setOnClickListener { test() }
         findViewById<Button>(R.id.btn_save).setOnClickListener { save() }
 
-        showPreview(Prefs.lastSnapshot(this) ?: UfiSnapshot.placeholder())
+        showPreview(Prefs.lastSnapshot(this))
     }
 
     private fun current() = UfiConfig(
@@ -62,7 +63,7 @@ class ConfigActivity : Activity() {
             return
         }
         btnTest.isEnabled = false
-        tvStatus.text = "连接中…"
+        showStatus("连接中…", R.color.secondary)
         val app = applicationContext
         Thread {
             val s = UfiClient(cfg).fetch()
@@ -70,18 +71,31 @@ class ConfigActivity : Activity() {
             runOnUiThread {
                 if (isFinishing || isDestroyed) return@runOnUiThread
                 btnTest.isEnabled = true
-                tvStatus.text = s.error
-                    ?: if (s.zreqOK) "连接成功（zreq 自动登录）" else "连接成功（zreq 不可用，已回退为直接读取 goform）"
+                val error = s.error
+                if (error != null) {
+                    showStatus(error, R.color.error)
+                } else {
+                    val source = if (s.zreqOK) "zreq 自动登录" else "直接读取 goform"
+                    showStatus("连接成功 · $source", R.color.success)
+                }
                 showPreview(s)
             }
         }.start()
     }
 
-    private fun showPreview(s: UfiSnapshot) {
+    private fun showStatus(message: String, color: Int) {
+        tvStatus.setTextColor(getColor(color))
+        tvStatus.text = message
+        tvStatus.visibility = View.VISIBLE
+    }
+
+    private fun showPreview(s: UfiSnapshot?) {
         try {
-            val rv = WidgetUpdater.buildMedium(this, s, R.layout.widget_medium, false, true)
+            val rv = WidgetUpdater.buildMedium(this, s ?: UfiSnapshot.placeholder(), R.layout.widget_medium, false, true)
+            val content = rv.apply(this, preview)
             preview.removeAllViews()
-            preview.addView(rv.apply(this, preview))
+            preview.addView(content)
+            findViewById<TextView>(R.id.preview_sample).visibility = if (s == null) View.VISIBLE else View.GONE
         } catch (e: Exception) {
             // 预览失败不影响使用
         }

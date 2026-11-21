@@ -84,7 +84,11 @@ struct UfiWidgetEntryView: View {
         let p = UfiPalette(dark: scheme == .dark)
         content
             .containerBackground(for: .widget) {
-                family == .accessoryRectangular ? Color.clear : p.bg
+                if family == .accessoryRectangular {
+                    Color.clear
+                } else {
+                    p.widgetBackground
+                }
             }
     }
 

@@ -5,4 +5,19 @@
     <string name="widget_small_label">UfiPeek 小号</string>
     <string name="widget_medium_desc">随身 WiFi 流量、电量、信号一览，点一下刷新</string>
     <string name="widget_small_desc">今日 / 本月流量与电量</string>
+    <string name="settings_subtitle">查看随身 WiFi 的流量、电量和信号</string>
+    <string name="settings_connection">连接设置</string>
+    <string name="settings_connection_hint">支持局域网与公网地址</string>
+    <string name="settings_address">后台地址</string>
+    <string name="settings_address_hint">http://192.168.0.1:2333</string>
+    <string name="settings_password">UFI 密码</string>
+    <string name="settings_password_hint">UFI-TOOLS 后台密码</string>
+    <string name="settings_zte_password">ZTE 密码（选填）</string>
+    <string name="settings_zte_password_hint">留空则使用 UFI 密码</string>
+    <string name="settings_test">测试连接</string>
+    <string name="settings_save">保存并刷新</string>
+    <string name="settings_preview">小组件预览</string>
+    <string name="settings_sample">示例数据</string>
+    <string name="settings_add_widget">添加到桌面</string>
+    <string name="settings_widget_help">长按桌面空白处，在小组件列表中找到 UfiPeek，可选择中号 4×2 或小号 2×2。\n\n点小组件即可刷新。点顶部型号可返回设置。若后台刷新受限，可在系统电池设置中允许 UfiPeek 在后台运行。</string>
 </resources>

@@ -1,56 +1,192 @@
 import SwiftUI
 
 extension Color {
-    init(hex: UInt32, alpha: Double = 1) {
-        self.init(.sRGB,
-                  red: Double((hex >> 16) & 0xFF) / 255,
-                  green: Double((hex >> 8) & 0xFF) / 255,
-                  blue: Double(hex & 0xFF) / 255,
-                  opacity: alpha)
+    init(hex: UInt32) {
+        self.init(
+            .sRGB,
+            red: Double((hex >> 16) & 0xFF) / 255,
+            green: Double((hex >> 8) & 0xFF) / 255,
+            blue: Double(hex & 0xFF) / 255,
+            opacity: 1
+        )
     }
 }
 
 struct UfiPalette {
     let dark: Bool
-    var bg: Color { dark ? Color(hex: 0x1A1A2E) : .white }
-    var text: Color { dark ? Color(hex: 0xEBEBEB) : .black }
-    var secondary: Color { dark ? Color(hex: 0xF1F5F9) : Color(hex: 0x172033) }
-    var accent: Color { dark ? Color(hex: 0x4D8DFF) : Color(hex: 0x0056D6) }
-    var chip: Color { dark ? Color.white.opacity(0.08) : Color(hex: 0xF1F4F8) }
-    var divider: Color { dark ? Color.white.opacity(0.18) : Color(hex: 0xD7DEE8) }
-    var router: Color { dark ? Color(hex: 0xD6D6D6) : Color(hex: 0x011D57) }
-    var signal: Color { dark ? Color(hex: 0x3A87FE) : Color(hex: 0x0042A9) }
-    var clock: Color { dark ? Color(hex: 0x96D35F) : Color(hex: 0x4E7A27) }
+
+    var text: Color { color(0x122C33, 0xF1F8F8) }
+    var secondary: Color { color(0x49636A, 0xADC2C7) }
+    var accent: Color { color(0x00685A, 0x74E4C6) }
+    var onAccent: Color { color(0xFFFFFF, 0x112F2B) }
+    var screen: Color { color(0xEEF5F4, 0x101C21) }
+    var surface: Color { color(0xFFFFFF, 0x192C32) }
+    var field: Color { color(0xF5F9F8, 0x131F24) }
+    var divider: Color { color(0xD1E4E0, 0x314A50) }
+    var daily: Color { color(0xD6F0E8, 0x1F403D) }
+    var monthly: Color { color(0xF5FAFB, 0x23353E) }
+    var chip: Color { color(0xFFFFFF, 0x21353B) }
+    var success: Color { color(0x087263, 0x8EDBCD) }
+    var error: Color { color(0xB23130, 0xFFB4AB) }
+    var cpu: Color { color(0x215BB0, 0x9ABCF8) }
+    var temperature: Color { color(0xAD392B, 0xFFB4A6) }
+    var memory: Color { color(0x6443B5, 0xC9B4FF) }
+    var devices: Color { color(0x6F468F, 0xDFB5FA) }
+
+    var widgetBackground: LinearGradient {
+        LinearGradient(
+            colors: [color(0xF8FCFB, 0x14262B), color(0xEAF4F3, 0x111E24)],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private func color(_ light: UInt32, _ dark: UInt32) -> Color {
+        Color(hex: self.dark ? dark : light)
+    }
 }
 
-private func rounded(_ size: CGFloat, _ weight: Font.Weight = .semibold) -> Font {
-    .system(size: size, weight: weight, design: .rounded)
-}
-
-struct UfiChip: View {
-    let icon: String
-    let iconColor: Color
-    let text: String
+private struct TrafficTile: View {
+    let title: String
+    let value: String
+    let unit: String
     let p: UfiPalette
+    var primary = false
+    var numberSize: CGFloat = 24
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(title)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(primary ? p.accent : p.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Text(value)
+                    .font(.system(size: numberSize, weight: .bold))
+                    .monospacedDigit()
+                    .foregroundStyle(p.text)
+                    .minimumScaleFactor(0.55)
+                Text(unit)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(p.secondary)
+                    .fixedSize()
+            }
+            .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(primary ? p.daily : p.monthly, in: RoundedRectangle(cornerRadius: 11))
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct UfiChip: View {
+    let icon: String
+    let label: String
+    let value: String
+    let tint: Color
+    let p: UfiPalette
+    var flexible = false
 
     var body: some View {
         HStack(spacing: 3) {
             Image(systemName: icon)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(iconColor)
-            Text(text)
-                .font(rounded(10.5))
-                .foregroundStyle(p.secondary)
+                .foregroundStyle(tint)
+                .accessibilityHidden(true)
+            Text(value)
+                .foregroundStyle(p.text)
                 .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .truncationMode(.tail)
         }
+        .font(.system(size: 10, weight: .medium))
+        .frame(maxWidth: flexible ? .infinity : nil, alignment: .leading)
         .padding(.horizontal, 5)
-        .padding(.vertical, 2.5)
-        .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(p.chip))
+        .padding(.vertical, 2)
+        .background(p.chip, in: RoundedRectangle(cornerRadius: 6))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(label))
+        .accessibilityValue(Text(value))
     }
 }
 
-// MARK: - 中号：完整复刻 UfiPeek 布局
+private struct WidgetHeader: View {
+    let snap: UfiSnapshot
+    let p: UfiPalette
+    var detailed = false
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "wifi.router.fill")
+                .foregroundStyle(p.accent)
+                .accessibilityHidden(true)
+            Text(snap.model)
+                .fontWeight(.bold)
+                .foregroundStyle(p.text)
+                .layoutPriority(1)
+            if detailed {
+                Text("UFI v\(snap.ufiVersion)")
+                    .font(.system(size: 9.5, weight: .medium))
+                    .foregroundStyle(p.secondary)
+            }
+            Spacer(minLength: 2)
+            if detailed {
+                HStack(spacing: 3) {
+                    Image(systemName: "cellularbars", variableValue: snap.signalFraction)
+                        .foregroundStyle(p.accent)
+                    Text(snap.signalBar)
+                }
+                .fixedSize()
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text("信号 \(snap.signalBar) 格"))
+            }
+            HStack(spacing: 3) {
+                Image(systemName: snap.batteryIcon)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color(hex: snap.batteryColorHex))
+                Text("\(snap.battery)%")
+                    .fontWeight(.semibold)
+            }
+            .fixedSize()
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("电量 \(snap.battery)%"))
+        }
+        .font(.system(size: 11, weight: .medium))
+        .monospacedDigit()
+        .lineLimit(1)
+        .minimumScaleFactor(0.75)
+        .foregroundStyle(p.text)
+    }
+}
+
+private struct WidgetFooter: View {
+    let snap: UfiSnapshot
+    let p: UfiPalette
+    var detailed = false
+
+    var body: some View {
+        let summary = detailed ? "RSRP \(snap.rsrp) · RSRQ \(snap.rsrq) · SNR \(snap.snr)" : snap.netSummary
+        HStack(spacing: 4) {
+            Image(systemName: snap.error == nil ? "cellularbars" : "exclamationmark.circle.fill")
+                .foregroundStyle(snap.error == nil ? p.accent : p.error)
+                .accessibilityHidden(true)
+            Text(snap.error ?? summary)
+                .foregroundStyle(snap.error == nil ? p.secondary : p.error)
+                .minimumScaleFactor(0.75)
+            Spacer(minLength: 1)
+            if detailed {
+                Image(systemName: "clock")
+                    .accessibilityHidden(true)
+            }
+            Text(detailed ? snap.updatedText : snap.updatedShort)
+                .monospacedDigit()
+                .fixedSize()
+                .accessibilityLabel(Text("更新于 \(detailed ? snap.updatedText : snap.updatedShort)"))
+        }
+        .font(.system(size: 9.5, weight: .medium))
+        .foregroundStyle(p.secondary)
+        .lineLimit(1)
+    }
+}
 
 struct MediumWidgetView: View {
     let snap: UfiSnapshot
@@ -59,120 +195,34 @@ struct MediumWidgetView: View {
     var body: some View {
         let p = UfiPalette(dark: scheme == .dark)
         VStack(spacing: 4) {
-            topBar(p)
-            HStack(spacing: 0) {
-                traffic("今日流量", snap.dailyValue, snap.dailyUnit, p).frame(maxWidth: .infinity)
-                Rectangle().fill(p.divider).frame(width: 1, height: 32)
-                traffic("本月流量", snap.monthlyValue, snap.monthlyUnit, p).frame(maxWidth: .infinity)
+            WidgetHeader(snap: snap, p: p, detailed: true)
+            HStack(spacing: 5) {
+                TrafficTile(title: "今日流量", value: snap.dailyValue, unit: snap.dailyUnit, p: p, primary: true)
+                TrafficTile(title: "本月流量", value: snap.monthlyValue, unit: snap.monthlyUnit, p: p)
             }
             HStack(spacing: 4) {
-                UfiChip(icon: "network", iconColor: Color(hex: 0x0891B2), text: snap.netSummary, p: p)
-                UfiChip(icon: "antenna.radiowaves.left.and.right", iconColor: p.accent, text: snap.band, p: p)
-                UfiChip(icon: "cpu.fill", iconColor: Color(hex: 0x2563EB), text: snap.cpuUsage + "%", p: p)
-                UfiChip(icon: "thermometer.medium", iconColor: Color(hex: 0xEF4444), text: snap.cpuTemp + "℃", p: p)
+                UfiChip(icon: "network", label: "移动网络", value: snap.netSummary, tint: p.accent, p: p, flexible: true)
+                UfiChip(icon: "antenna.radiowaves.left.and.right", label: "频段", value: snap.band, tint: p.accent, p: p)
+                UfiChip(icon: "cpu", label: "CPU 占用", value: snap.cpuUsage + "%", tint: p.cpu, p: p)
+                UfiChip(icon: "thermometer.medium", label: "CPU 温度", value: snap.cpuTemp + "℃", tint: p.temperature, p: p)
             }
             HStack(spacing: 4) {
-                UfiChip(icon: "wifi", iconColor: Color(hex: 0x0F766E), text: snap.ssid, p: p)
-                    .layoutPriority(-1)
-                UfiChip(icon: "dot.radiowaves.left.and.right", iconColor: Color(hex: 0x0F766E), text: snap.wifiBand, p: p)
-                UfiChip(icon: "memorychip", iconColor: Color(hex: 0x7C3AED), text: snap.mem, p: p)
-                UfiChip(icon: "laptopcomputer.and.iphone", iconColor: Color(hex: 0x7A219E), text: snap.wifiDevices, p: p)
-                UfiChip(icon: snap.smsUnread > 0 ? "envelope.badge.fill" : "envelope",
-                        iconColor: snap.smsUnread > 0 ? Color(hex: 0xDC2626) : p.accent,
-                        text: String(snap.smsUnread), p: p)
+                UfiChip(icon: "wifi", label: "WiFi 名称", value: snap.ssid, tint: p.accent, p: p, flexible: true)
+                UfiChip(icon: "dot.radiowaves.left.and.right", label: "WiFi 频率", value: snap.wifiBand, tint: p.accent, p: p)
+                UfiChip(icon: "memorychip", label: "内存占用", value: snap.mem, tint: p.memory, p: p)
+                UfiChip(icon: "laptopcomputer.and.iphone", label: "连接设备", value: snap.wifiDevices, tint: p.devices, p: p)
+                UfiChip(
+                    icon: snap.smsUnread > 0 ? "envelope.badge.fill" : "envelope",
+                    label: "未读短信", value: String(snap.smsUnread), tint: snap.smsUnread > 0 ? p.error : p.accent, p: p
+                )
             }
-            bottomBar(p)
+            WidgetFooter(snap: snap, p: p, detailed: true)
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-    }
-
-    private func topBar(_ p: UfiPalette) -> some View {
-        HStack(spacing: 4) {
-            Image(systemName: "wifi.router.fill")
-                .font(.system(size: 11))
-                .foregroundStyle(p.router)
-            Text(snap.model)
-                .font(rounded(12, .bold))
-                .foregroundStyle(p.text)
-                .lineLimit(1)
-            Text("UFI v\(snap.ufiVersion)")
-                .font(rounded(9.5, .medium))
-                .foregroundStyle(p.text.opacity(0.75))
-                .lineLimit(1)
-                .minimumScaleFactor(0.6)
-            Spacer(minLength: 2)
-            Image(systemName: "cellularbars", variableValue: snap.signalFraction)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(p.text)
-            Text(snap.signalBar)
-                .font(rounded(11, .bold))
-                .foregroundStyle(p.text)
-            Text("|")
-                .font(rounded(10))
-                .foregroundStyle(p.divider)
-            Image(systemName: snap.batteryIcon)
-                .font(.system(size: 13))
-                .foregroundStyle(Color(hex: snap.batteryColorHex))
-            Text("\(snap.battery)%")
-                .font(rounded(11, .bold))
-                .foregroundStyle(p.text)
-        }
-    }
-
-    private func traffic(_ title: String, _ value: String, _ unit: String, _ p: UfiPalette) -> some View {
-        VStack(spacing: 0) {
-            Text(title)
-                .font(rounded(10.5, .bold))
-                .foregroundStyle(p.accent)
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(value)
-                    .font(rounded(28, .heavy))
-                    .foregroundStyle(p.text)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                Text(unit)
-                    .font(.system(size: 12, weight: .bold, design: .serif))
-                    .italic()
-                    .foregroundStyle(p.text)
-            }
-        }
-    }
-
-    private func bottomBar(_ p: UfiPalette) -> some View {
-        HStack(spacing: 6) {
-            if let err = snap.error {
-                HStack(spacing: 3) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(Color(hex: 0xDC2626))
-                    Text(err)
-                        .foregroundStyle(Color(hex: 0xDC2626))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                }
-            } else {
-                HStack(spacing: 3) {
-                    Image(systemName: "antenna.radiowaves.left.and.right.circle")
-                        .foregroundStyle(p.signal)
-                    Text("RSRP \(snap.rsrp) · RSRQ \(snap.rsrq) · SNR \(snap.snr)")
-                        .foregroundStyle(p.text)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                }
-            }
-            HStack(spacing: 3) {
-                Image(systemName: "clock.arrow.circlepath")
-                    .foregroundStyle(p.clock)
-                Text(snap.updatedText)
-                    .foregroundStyle(p.text)
-                    .lineLimit(1)
-            }
-        }
-        .font(rounded(9.5, .medium))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
-
-// MARK: - 小号：流量 + 电量 + 网络
 
 struct SmallWidgetView: View {
     let snap: UfiSnapshot
@@ -180,89 +230,50 @@ struct SmallWidgetView: View {
 
     var body: some View {
         let p = UfiPalette(dark: scheme == .dark)
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 3) {
-                Image(systemName: "wifi.router.fill")
-                    .font(.system(size: 10))
-                    .foregroundStyle(p.router)
-                Text(snap.model)
-                    .font(rounded(11, .bold))
-                    .foregroundStyle(p.text)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Spacer(minLength: 2)
-                Image(systemName: snap.batteryIcon)
-                    .font(.system(size: 11))
-                    .foregroundStyle(Color(hex: snap.batteryColorHex))
-                Text("\(snap.battery)%")
-                    .font(rounded(10, .bold))
-                    .foregroundStyle(p.text)
-            }
+        VStack(alignment: .leading, spacing: 4) {
+            WidgetHeader(snap: snap, p: p)
             Spacer(minLength: 0)
-            Text("今日流量")
-                .font(rounded(10.5, .bold))
-                .foregroundStyle(p.accent)
-            HStack(alignment: .firstTextBaseline, spacing: 2) {
-                Text(snap.dailyValue)
-                    .font(rounded(32, .heavy))
-                    .foregroundStyle(p.text)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                Text(snap.dailyUnit)
-                    .font(.system(size: 13, weight: .bold, design: .serif))
-                    .italic()
-                    .foregroundStyle(p.text)
-            }
-            HStack(spacing: 3) {
+            TrafficTile(title: "今日流量", value: snap.dailyValue, unit: snap.dailyUnit, p: p, primary: true, numberSize: 29)
+            HStack(spacing: 4) {
                 Text("本月")
-                    .font(rounded(10.5, .bold))
-                    .foregroundStyle(p.accent)
-                Text(snap.monthlyValue + snap.monthlyUnit)
-                    .font(rounded(12, .bold))
+                    .foregroundStyle(p.secondary)
+                Text("\(snap.monthlyValue) \(snap.monthlyUnit)")
+                    .monospacedDigit()
                     .foregroundStyle(p.text)
             }
+            .font(.system(size: 11, weight: .semibold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
+            .padding(.horizontal, 3)
             Spacer(minLength: 0)
-            HStack(spacing: 3) {
-                Image(systemName: "cellularbars", variableValue: snap.signalFraction)
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(p.text)
-                Text(snap.error == nil ? snap.netSummary : "连接失败")
-                    .foregroundStyle(snap.error == nil ? p.secondary : Color(hex: 0xDC2626))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-                Spacer(minLength: 2)
-                Text(snap.updatedShort)
-                    .foregroundStyle(p.secondary.opacity(0.7))
-            }
-            .font(rounded(9.5, .medium))
+            WidgetFooter(snap: snap, p: p)
         }
-        .padding(12)
+        .padding(10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
-
-// MARK: - 锁屏矩形
 
 struct LockRectView: View {
     let snap: UfiSnapshot
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 3) {
                 Image(systemName: "wifi.router.fill")
-                Text(snap.model).lineLimit(1)
+                Text(snap.model)
                 Spacer(minLength: 2)
                 Image(systemName: snap.batteryIcon)
                 Text("\(snap.battery)%")
+                    .fixedSize()
             }
-            .font(.system(size: 12, weight: .semibold, design: .rounded))
-            Text("今日 \(snap.dailyValue)\(snap.dailyUnit)")
-                .font(.system(size: 15, weight: .heavy, design: .rounded))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text("本月 \(snap.monthlyValue)\(snap.monthlyUnit) · \(snap.netSummary)")
-                .font(.system(size: 11, weight: .medium, design: .rounded))
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+            .font(.system(size: 11, weight: .semibold))
+            Text("今日 \(snap.dailyValue) \(snap.dailyUnit)")
+                .font(.system(size: 15, weight: .bold))
+            Text("本月 \(snap.monthlyValue) \(snap.monthlyUnit) · \(snap.netSummary)")
+                .font(.system(size: 10, weight: .medium))
         }
+        .monospacedDigit()
+        .lineLimit(1)
+        .minimumScaleFactor(0.75)
     }
 }

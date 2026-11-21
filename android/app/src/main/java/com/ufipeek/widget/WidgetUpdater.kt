@@ -16,7 +16,6 @@ object WidgetUpdater {
     const val ACTION_REFRESH = "com.ufipeek.widget.ACTION_REFRESH"
     private const val JOB_NOW = 1001
     private const val JOB_PERIODIC = 1002
-    private const val RED = 0xFFDC2626.toInt()
 
     private fun ids(ctx: Context, cls: Class<*>): IntArray =
         AppWidgetManager.getInstance(ctx).getAppWidgetIds(ComponentName(ctx, cls))
@@ -74,7 +73,7 @@ object WidgetUpdater {
             v.setTextViewText(R.id.mem, s.mem)
             v.setTextViewText(R.id.devices, s.wifiDevices)
             v.setTextViewText(R.id.sms, s.smsUnread.toString())
-            v.setInt(R.id.sms_icon, "setColorFilter", if (s.smsUnread > 0) RED else ctx.getColor(R.color.accent))
+            v.setInt(R.id.sms_icon, "setColorFilter", ctx.getColor(if (s.smsUnread > 0) R.color.error else R.color.accent))
         }
 
         val err = s.error
